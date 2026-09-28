@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="no-referrer-when-downgrade">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>感謝DAYまとめ買いリスト</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -236,7 +237,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 </template>
 
 <script>
-const KEY='matomegai-v1';/* v2: API検索つき */
+const KEY='matomegai-v1';/* v2.1: API検索つき */
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
 const SITES=['mall','rak','yah','amz'];
@@ -371,27 +372,28 @@ async function rakSearch(q,jan){
   if(!keys.rakId||!keys.rakKey)throw new Error('キー未設定');
   const gap=Date.now()-lastRak;if(gap<1100)await wait(1100-gap);lastRak=Date.now();
   const u=new URL('https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701');
-  const P={applicationId:keys.rakId,accessKey:keys.rakKey,keyword:jan||q,hits:10,format:'json',formatVersion:2,availability:1,elements:'itemName,itemPrice,itemUrl,shopName,postageFlag,pointRate'};
+  const P={applicationId:keys.rakId,accessKey:keys.rakKey,keyword:jan||q,hits:10,format:'json',formatVersion:2,availability:1};
   Object.entries(P).forEach(([k,v])=>u.searchParams.set(k,v));
   let res;try{res=await fetch(u)}catch(e){throw new Error('通信できません')}
   const j=await res.json().catch(()=>({}));
   if(res.status===404)return[];
   if(!res.ok){const d=j.error_description||j.errors?.errorMessage||('エラー'+res.status);throw new Error(res.status===403?'キーか許可サイトの設定を確認（'+d+'）':res.status===429?'検索が多すぎます。少し待って再検索':d)}
-  return (j.items||[]).map(x=>({name:x.itemName,price:x.itemPrice,url:x.itemUrl,shop:x.shopName,ship:x.postageFlag===0?'送料込':'送料別',shipWarn:x.postageFlag!==0,bonus:Math.max((x.pointRate||1)-1,0)}));
+  const arr=(j.items||j.Items||[]).map(x=>x.item||x.Item||x);
+  return arr.filter(x=>x&&x.itemPrice).map(x=>({name:x.itemName,price:x.itemPrice,url:x.itemUrl,shop:x.shopName,ship:x.postageFlag===0?'送料込':'送料別',shipWarn:x.postageFlag!==0,bonus:Math.max((x.pointRate||1)-1,0)}));
 }
 let jp=0;
 function yahSearch(q,jan){
   if(!keys.yah)return Promise.reject(new Error('キー未設定'));
   return new Promise((ok,ng)=>{
-    const cb='__yh'+(++jp);const sc=document.createElement('script');
+    const cb='__yh'+(++jp);const sc=document.createElement('script');sc.referrerPolicy='no-referrer-when-downgrade';
     const u=new URL('https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch');
     const P={appid:keys.yah,results:10,in_stock:'true',callback:cb};if(jan)P.jan_code=jan;else P.query=q;
     Object.entries(P).forEach(([k,v])=>u.searchParams.set(k,v));
     const done=()=>{delete window[cb];sc.remove();clearTimeout(t)};
     const t=setTimeout(()=>{done();ng(new Error('応答なし（Client IDかサイトURLの設定を確認）'))},10000);
-    window[cb]=j=>{done();if(j.Error||j.error){ng(new Error('Client IDかサイトURLの設定を確認'));return}
+    window[cb]=j=>{done();if(j.Error||j.error){const m=(j.Error&&j.Error.Message)||j.error_description||'';ng(new Error('Client IDかサイトURLの設定を確認'+(m?'（'+m+'）':'')));return}
       ok((j.hits||[]).map(x=>{const c=x.shipping?.code;return{name:x.name,price:x.price,url:x.url,shop:x.seller?.name||'',ship:c===2?'送料無料':c===3?'条件付き送料無料':'送料別',shipWarn:c!==2,bonus:+(x.point?.lyLimitedBonusTimes||0)}}))};
-    sc.onerror=()=>{done();ng(new Error('Client IDかサイトURLの設定を確認'))};
+    sc.onerror=()=>{done();ng(new Error('Yahoo!に拒否されました。Client IDかサイトURLの設定を確認'))};
     sc.src=u.toString();document.body.appendChild(sc);
   });
 }
