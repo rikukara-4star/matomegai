@@ -87,6 +87,14 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 .site.chosen{outline:3px solid var(--sky);outline-offset:-1px}
 .site .pick{margin-top:5px;width:100%;font-size:10px;padding:3px}
 .site.chosen .pick{background:var(--sky);color:#fff;border-color:var(--sky)}
+.site .pick:disabled{opacity:.45;cursor:default}
+.shop{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+.shop h3{margin:0 0 6px;font-size:13px;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.shop .step{font-size:11px;color:var(--mute);margin:0 0 6px;line-height:1.6}
+.shop .li{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:12px;padding:5px 0;border-top:1px dashed var(--line)}
+.shop .li span{flex:1;min-width:0}
+.btn.park{background:var(--sky);color:#fff;border-color:var(--sky);text-decoration:none;display:inline-block}
+.done{opacity:.45}
 .keyok{font-size:11px;color:var(--ok);font-weight:700}
 .credit{text-align:center;font-size:10px;color:var(--mute);margin:6px 0 0}
 .credit a{color:var(--mute)}
@@ -163,11 +171,17 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
     <p class="note" style="padding:8px 0 0" id="compare"></p>
   </section>
 
+  <section class="panel">
+    <h2>買い物の順番（1店舗ずつ）</h2>
+    <ul class="note" style="margin-bottom:8px"><li>楽天・Yahoo!は<b>1店舗ごとに、毎回パークから入り直す</b>必要があります（JAL公式の注意事項）</li><li>手順：①「パーク経由で開く」→ ②開いた楽天/Yahoo!の中で商品名を貼り付けて検索 → ③その店の商品をカートへ → ④購入 → ⑤「この店は買った」→ 次の店</li><li>候補のショップ名リンクは<b>商品を見る用</b>です。そこから直接買うとパークのマイルがつかない可能性があります</li></ul>
+    <div id="shopList"></div>
+  </section>
+
   <section class="panel checklist">
     <h2>当日のチェックリスト</h2>
     <label><input type="checkbox">JAL Mallにログインしてから買う（ログインしないとマイルがつかない）</label>
     <label><input type="checkbox">感謝DAYの対象ショップと倍率を確認した <a href="https://ec.jal.co.jp/shop/pages/campaign.aspx" target="_blank" rel="noopener">キャンペーン一覧</a></label>
-    <label><input type="checkbox">楽天は<b>JALマイレージパーク経由</b>で開いた <a href="https://partner.jal.co.jp/shop/?tp=15268" target="_blank" rel="noopener">楽天市場（パーク）</a>（経由前にカートに入れた商品は対象外）</label>
+    <label><input type="checkbox">楽天は<b>JALマイレージパーク経由</b>で、<b>1店舗ごとに毎回</b>開いた <a href="https://partner.jal.co.jp/shop/?tp=15268" target="_blank" rel="noopener">楽天市場（パーク）</a>（経由前にカートに入れた商品は対象外）</label>
     <label><input type="checkbox">Yahoo!も<b>パーク経由</b>で開いた <a href="https://partner.jal.co.jp/shop/?tp=15264" target="_blank" rel="noopener">Yahoo!ショッピング（パーク）</a></label>
     <label><input type="checkbox">買い終わるまで、別のサイトを開かない（パークのマイルが外れることがある）</label>
     <label><input type="checkbox">カードの割り振りどおりに払った（JAL Mall＝JALカード、楽天・Yahoo!＝マリオット など）</label>
@@ -237,7 +251,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 </template>
 
 <script>
-const KEY='matomegai-v1';/* v2.1: API検索つき */
+const KEY='matomegai-v1';/* v2.2: API検索・店舗ごとの買い物リスト */
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
 const SITES=['mall','rak','yah','amz'];
@@ -318,6 +332,7 @@ function links(n,it){
 function calc(){
   const s=S();state.settings=s;
   const agg={};SITES.forEach(k=>agg[k]={n:0,pay:0,mile:0,lsp:0,mar:0,shop:0});
+  const groups={};
   let tPay=0,tEff=0,tMile=0,tLsp=0,tMar=0,mallOnly={pay:0,eff:0,ok:true,any:false},countOn=0;
   document.querySelectorAll('.item').forEach(n=>{
     const it=state.items[+n.dataset.i];links(n,it);
@@ -327,8 +342,9 @@ function calc(){
       const el=n.querySelector(`.site[data-s="${k}"]`);el.classList.remove('best');
       const r=calcSite(k,+(it[k]?.p||0),+(it.mall?.m||0),s,+(it[k]?.bonus||0));
       el._r=r;el.classList.remove('chosen');
-      const src=el.querySelector('.src');if(src){const o=it[k]?.src;src.innerHTML=o?`<a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.shop)}</a>${o.note?' · '+esc(o.note):''}`:''}
+      const src=el.querySelector('.src');if(src){const o=it[k]?.src;src.innerHTML=o?`${esc(o.shop)} <a href="${esc(o.url)}" target="_blank" rel="noopener">見る</a>${o.note?' · '+esc(o.note):''}`:''}
       el.querySelector('.eff').innerHTML=r?`実質<b class="num">${fmt(r.eff)}円</b>${fmt(r.mile)}マイル・LSP ${r.lsp.toFixed(2)}${r.marPt?`<br>マリオット ${fmt(r.marPt)}pt`:''}${r.shopPt?`<br>ポイント ${fmt(r.shopPt)}`:''}`:'<span style="opacity:.6">未入力</span>';
+      const pb=el.querySelector('.pick');pb.disabled=!r;pb.textContent=!r?'価格を入れると選べます':(it.pick===k?'ここで買う ✓':'ここで買う');
       if(r&&(!best||r.eff<best.r.eff))best={k,r,el};
     });
     if(best)best.el.classList.add('best');
@@ -336,6 +352,7 @@ function calc(){
     if(it.pick){const el=n.querySelector(`.site[data-s="${it.pick}"]`);if(el._r){use={k:it.pick,r:el._r,el};el.classList.add('chosen')}}
     if(it.on!==false&&use){const best=use;
       countOn++;
+      {const shop=best.k==='mall'?'JAL Mall':best.k==='amz'?'Amazon':(it[best.k]?.src?.shop||'（ショップ未選択）');const gk=best.k+'|'+shop;(groups[gk]=groups[gk]||{k:best.k,shop,items:[]}).items.push({name:(it.name||'').replace(/（見本）/,''),qty:it.qty||1,price:best.r.price,url:best.k==='mall'?it.url:''})}
       const a=agg[best.k];a.n++;a.pay+=best.r.price;a.mile+=best.r.mile;a.lsp+=best.r.lsp;a.mar+=best.r.marPt;a.shop+=best.r.shopPt;
       tPay+=best.r.price;tEff+=best.r.eff;tMile+=best.r.mile;tLsp+=best.r.lsp;tMar+=best.r.marPt;
       const mr=n.querySelector('.site[data-s="mall"]')._r;
@@ -345,6 +362,7 @@ function calc(){
   const rows=SITES.filter(k=>agg[k].n).map(k=>{const a=agg[k];return `<tr><td>${SNAME[k]}</td><td class="num">${a.n}</td><td class="num">${fmt(a.pay)}</td><td class="num">${fmt(a.mile)}</td><td class="num">${a.lsp.toFixed(2)}</td><td class="num">${fmt(a.mar)}</td><td class="num">${fmt(a.shop)}</td></tr>`});
   $('#bySite').innerHTML=rows.length?rows.join('')+`<tr class="tot"><td>合計</td><td class="num">${countOn}</td><td class="num">${fmt(tPay)}</td><td class="num">${fmt(tMile)}</td><td class="num">${tLsp.toFixed(2)}</td><td class="num">${fmt(tMar)}</td><td class="num">${fmt(SITES.reduce((x,k)=>x+agg[k].shop,0))}</td></tr>`:'<tr><td colspan="7" style="color:var(--mute)">価格を入れると、ショップごとの買い物リストが出ます</td></tr>';
   $('#compare').textContent=(mallOnly.any&&mallOnly.ok&&countOn)?`参考：全部JAL Mallで買った場合は 支払い${fmt(mallOnly.pay)}円・実質${fmt(mallOnly.eff)}円。この組み合わせだと実質で${fmt(mallOnly.eff-tEff)}円${mallOnly.eff-tEff>=0?'おトク':'高く'}なります。LSPは小数点以下も積み上がります（100マイル・400マイルごとに1）。`:'';
+  drawShops(groups);
   $('#tPay').innerHTML=`${fmt(tPay)}<small>円</small>`;
   $('#tSub').textContent=`実質 ${fmt(tEff)}円（${countOn}品目）`;
   $('#tMile').innerHTML=`${fmt(tMile)}<small>マイル</small>`;
@@ -352,6 +370,20 @@ function calc(){
   save();
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state,(k,v)=>k==='_c'?undefined:v))}catch(e){}}
+const PARK={rak:'https://partner.jal.co.jp/shop/?tp=15268',yah:'https://partner.jal.co.jp/shop/?tp=15264'};
+let doneShops={};
+function drawShops(groups){
+  const order={mall:0,rak:1,yah:2,amz:3};
+  const g=Object.entries(groups).sort((a,b)=>order[a[1].k]-order[b[1].k]);
+  if(!g.length){$('#shopList').innerHTML='<p class="msg">価格を入れると、店舗ごとの買い物リストが出ます</p>';return}
+  let n=0;
+  $('#shopList').innerHTML=g.map(([key,x])=>{n++;const sum=x.items.reduce((a,b)=>a+b.price,0);
+    const btn=x.k==='mall'?`<a class="btn small park" href="https://ec.jal.co.jp/shop/default.aspx" target="_blank" rel="noopener">JAL Mallを開く</a>`:x.k==='amz'?`<a class="btn small" href="https://www.amazon.co.jp/" target="_blank" rel="noopener">Amazonを開く</a>`:`<a class="btn small park" href="${PARK[x.k]}" target="_blank" rel="noopener">① パーク経由で開く</a>`;
+    const step=x.k==='mall'?'ログインしてから購入（商品URLを登録していれば下のリンクから）':x.k==='amz'?'パーク対象外として計算しています':`パークのページで「ショップへ」を押す → 楽天/Yahoo!内で商品名を貼り付けて検索 → <b>${esc(x.shop)}</b>の商品を選ぶ`;
+    return `<div class="shop${doneShops[key]?' done':''}"><h3><span>${n}. ${x.k==='rak'?'楽天：':x.k==='yah'?'Yahoo!：':''}${esc(x.shop)}</span><span class="num">${fmt(sum)}円</span></h3><p class="step">${step}</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${btn}<button class="btn small" data-done="${esc(key)}">${doneShops[key]?'買った ✓':'この店は買った'}</button></div>${x.items.map(i=>`<div class="li"><span>${esc(i.name)} ×${i.qty}（${fmt(i.price)}円）</span>${i.url?`<a class="btn small" href="${esc(i.url)}" target="_blank" rel="noopener">商品</a>`:''}<button class="btn small" data-copy="${esc(i.name)}">名前をコピー</button></div>`).join('')}</div>`}).join('');
+  $('#shopList').querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='コピーしました'}catch(e){prompt('コピーしてください',b.dataset.copy)}});
+  $('#shopList').querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{const k=b.dataset.done;doneShops[k]=!doneShops[k];calc()});
+}
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- API ---------- */
