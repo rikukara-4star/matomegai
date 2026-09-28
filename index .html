@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>感謝DAYまとめ買いリスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16202e;--paper:#f3f5f8;--card:#fff;--crane:#c8102e;--crane-soft:#fbe9ec;--sky:#1d4e89;--sky-soft:#e7eef7;--line:#dfe4eb;--mute:#6b7686;--ok:#1f7a4d;--ok-soft:#e5f4ec;--gold:#ffd88a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%;padding-bottom:200px}
+.num{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{background:var(--ink);color:#fff;padding:22px 18px 18px;position:relative;overflow:hidden}
+header::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;border:18px solid var(--crane)}
+header .eyebrow{font-size:11px;letter-spacing:.2em;color:#aab4c3}
+header h1{margin:4px 0 0;font-size:21px;font-weight:900}
+header p{margin:6px 0 0;font-size:12px;color:#c9d1dc;max-width:72%;line-height:1.6}
+main{max-width:780px;margin:0 auto;padding:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.panel h2{margin:0 0 10px;font-size:13px;letter-spacing:.08em;color:var(--mute);font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
+label.f{display:block;font-size:11px;color:var(--mute);margin:0 0 3px}
+input,select{width:100%;font:inherit;font-size:16px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--sky);outline-offset:-1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.row{margin-bottom:8px}
+.btn{font:inherit;font-weight:700;font-size:13px;border-radius:9px;padding:8px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--crane);color:#fff;border-color:var(--crane)}
+.btn.small{font-size:12px;padding:6px 9px}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:#fff}
+.item.off{opacity:.5}
+.item-head{display:grid;grid-template-columns:auto 1fr 80px auto;gap:8px;align-items:end;margin-bottom:10px}
+.item-head .chk{width:22px;height:22px;accent-color:var(--crane);margin-bottom:9px}
+.item-head .name{font-weight:700}
+.sites{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.site{border:1px solid var(--line);border-radius:10px;padding:8px;position:relative;background:var(--paper)}
+.site.best{border-color:var(--ok);background:var(--ok-soft)}
+.site.best::after{content:"最安";position:absolute;top:-8px;right:6px;font-size:10px;font-weight:700;background:var(--ok);color:#fff;border-radius:99px;padding:1px 7px}
+.site .sn{font-size:11px;font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;gap:4px}
+.site .sn a{font-size:10px;font-weight:500;color:var(--sky);text-decoration:none}
+.site input{font-size:15px;padding:6px 7px}
+.site .mult{margin-top:4px}
+.site .eff{font-size:10px;color:var(--mute);margin-top:5px;line-height:1.4}
+.site .eff b{display:block;font-size:14px;color:var(--ink)}
+.site.best .eff b{color:var(--ok)}
+.item-foot{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center;font-size:11px;color:var(--mute)}
+.item-foot input{font-size:13px;padding:5px 7px}
+.add{width:100%;padding:13px;border:2px dashed var(--crane);background:var(--crane-soft);color:var(--crane);font:inherit;font-weight:700;font-size:15px;border-radius:12px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-size:10px;color:var(--mute);font-weight:500}
+tr.tot td{font-weight:900;border-top:2px solid var(--ink);border-bottom:none}
+.note{font-size:11px;color:var(--mute);line-height:1.7;margin:0;padding-left:16px}
+.checklist label{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line);line-height:1.5}
+.checklist input{width:18px;height:18px;flex:none;margin-top:1px;accent-color:var(--crane)}
+.checklist a{color:var(--sky)}
+.pass{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:0 10px calc(10px + env(safe-area-inset-bottom))}
+.pass-in{max-width:780px;margin:0 auto;background:var(--ink);color:#fff;border-radius:16px;display:grid;grid-template-columns:1.2fr auto 1fr;box-shadow:0 10px 30px rgba(22,32,46,.35);overflow:hidden}
+.pass .cell{padding:11px 14px}
+.pass .lbl{font-size:10px;letter-spacing:.14em;color:#9fb0c6}
+.pass .big{font-size:26px;font-weight:700;line-height:1.1}
+.pass .big small{font-size:12px;margin-left:3px;color:#c9d1dc;font-family:"Zen Kaku Gothic New",sans-serif}
+.pass .sub{font-size:11px;color:#c9d1dc;margin-top:3px;line-height:1.5}
+.perf{width:0;border-left:2px dashed #3b4a5f;position:relative}
+.perf::before,.perf::after{content:"";position:absolute;left:-10px;width:18px;height:18px;border-radius:50%;background:var(--paper)}
+.perf::before{top:-9px}.perf::after{bottom:-9px}
+.pass .gold{color:var(--gold)}
+details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
+.cands{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cands:empty{display:none}
+.cbox{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+.cbox h4{margin:0 0 6px;font-size:11px;color:var(--mute);display:flex;justify-content:space-between}
+.cand{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line);font-size:11px;line-height:1.4}
+.cand .cn{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink);text-decoration:none}
+.cand .cm{color:var(--mute);font-size:10px}
+.cand .cp{font-weight:700;font-size:13px}
+.cand .warn{color:var(--crane)}
+.cand.picked{background:var(--ok-soft)}
+.msg{font-size:11px;color:var(--mute);padding:4px 0}
+.msg.err{color:var(--crane)}
+.site .src{font-size:9px;color:var(--mute);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.site .src a{color:var(--sky)}
+.site.chosen{outline:3px solid var(--sky);outline-offset:-1px}
+.site .pick{margin-top:5px;width:100%;font-size:10px;padding:3px}
+.site.chosen .pick{background:var(--sky);color:#fff;border-color:var(--sky)}
+.keyok{font-size:11px;color:var(--ok);font-weight:700}
+.credit{text-align:center;font-size:10px;color:var(--mute);margin:6px 0 0}
+.credit a{color:var(--mute)}
+@media (max-width:560px){.cands{grid-template-columns:1fr}}
+@media (max-width:560px){.sites{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}.item-head{grid-template-columns:auto 1fr 64px auto}.pass .big{font-size:22px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">JAL MALL THANKS DAY · BULK BUY</div>
+  <h1>感謝DAYまとめ買いリスト</h1>
+  <p>よく買う日用品を登録しておき、感謝DAYの日に価格をそろえるだけ。楽天・Yahoo!は検索して選ぶだけ、JAL MallとAmazonは手入力。マイル・LSP・ポイント込みの「実質価格」で、どこで買うかが一目でわかります。</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>今回の設定</h2>
+    <div class="g3 row">
+      <div><label class="f">買う日</label><input type="date" id="day"></div>
+      <div><label class="f">JAL Mall 全体の倍率（100円で何マイル）</label><input type="number" id="mallBase" min="1" step="1" value="2" class="num"></div>
+      <div><label class="f">楽天の倍率（%）</label><input type="number" id="rakRate" min="0" step="0.5" value="5" class="num"></div>
+    </div>
+    <div class="g3 row">
+      <div><label class="f">Yahoo!の還元（%）</label><input type="number" id="yahRate" min="0" step="0.5" value="1" class="num"></div>
+      <div><label class="f">Amazonの還元（%）</label><input type="number" id="amzRate" min="0" step="0.5" value="1" class="num"></div>
+      <div><label class="f">ショッピングマイル・プレミアム</label><select id="premium"><option value="1">加入している</option><option value="0">加入していない</option></select></div>
+    </div>
+    <details><summary>支払いカードと価値の換算を変える</summary>
+      <div class="g4" style="margin-top:8px">
+        <div><label class="f">JAL Mallのカード</label><select id="cMall"><option value="jal">JALカード</option><option value="mar">マリオット</option></select></div>
+        <div><label class="f">楽天のカード</label><select id="cRak"><option value="mar">マリオット</option><option value="jal">JALカード</option></select></div>
+        <div><label class="f">Yahoo!のカード</label><select id="cYah"><option value="mar">マリオット</option><option value="jal">JALカード</option></select></div>
+        <div><label class="f">Amazonのカード</label><select id="cAmz"><option value="jal">JALカード</option><option value="mar">マリオット</option></select></div>
+      </div>
+      <div class="g4" style="margin-top:8px">
+        <div><label class="f">1マイル＝円</label><input type="number" id="vMile" step="0.01" value="1.5" class="num"></div>
+        <div><label class="f">マリオット1pt＝円</label><input type="number" id="vMar" step="0.01" value="0.58" class="num"></div>
+        <div><label class="f">ショップ1pt＝円</label><input type="number" id="vShop" step="0.01" value="1" class="num"></div>
+        <div><label class="f">1LSP＝円（任意）</label><input type="number" id="vLsp" step="1" value="0" class="num"></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>APIキー（楽天・Yahoo!の価格を自動で検索） <span class="keyok" id="keyState"></span></h2>
+    <details id="keyBox"><summary>キーを入れる・変える</summary>
+      <div class="g3" style="margin-top:8px">
+        <div><label class="f">楽天 アプリID</label><input id="kRakId" autocomplete="off" spellcheck="false"></div>
+        <div><label class="f">楽天 アクセスキー</label><input id="kRakKey" type="password" autocomplete="off"></div>
+        <div><label class="f">Yahoo! Client ID</label><input id="kYah" type="password" autocomplete="off"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small primary" id="kSave">保存</button><button class="btn small" id="kTest">テスト検索</button><button class="btn small" id="kDel">キーを消す</button></div>
+      <p class="msg" id="kMsg"></p>
+      <ul class="note"><li>キーはこの端末のブラウザにだけ保存されます（GitHubやリストの書き出しには入りません）</li><li>このURL（rikukara-4star.github.io）以外で開くと、楽天・Yahoo!に拒否されます</li></ul>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>まとめ買いリスト <span><button class="btn small primary" id="searchAll">全部検索</button> <button class="btn small" id="clearPrices">価格だけクリア</button> <button class="btn small" id="clearSample">見本を消す</button></span></h2>
+    <ul class="note" style="margin-bottom:10px">
+      <li>価格は<b>その数量分の税込合計</b>を入れてください（送料込みで比べたい時は送料も足す）</li>
+      <li>JAL Mallはショップごとに倍率が違うので、各商品の「倍率」に<b>100円で何マイルか</b>を入れます</li>
+      <li>チェックを外した商品は合計に入りません（今回は買わない物）</li>
+      <li>「検索」で楽天・Yahoo!の候補が出ます。<b>「これにする」を押すと、数量分の価格が入ります</b>（JANコードを入れると同じ商品を探しやすくなります）</li>
+      <li>最安には自動で印がつきます。別のショップで買いたい時は、そのショップの<b>「ここで買う」</b>を押してください</li>
+    </ul>
+    <div id="items"></div>
+    <button class="add" id="add">＋ 商品を追加</button>
+  </section>
+
+  <section class="panel">
+    <h2>どこで買うか</h2>
+    <table><thead><tr><th>ショップ</th><th>品目</th><th>支払額</th><th>マイル</th><th>LSP</th><th>マリオットpt</th><th>ショップpt</th></tr></thead><tbody id="bySite"></tbody></table>
+    <p class="note" style="padding:8px 0 0" id="compare"></p>
+  </section>
+
+  <section class="panel checklist">
+    <h2>当日のチェックリスト</h2>
+    <label><input type="checkbox">JAL Mallにログインしてから買う（ログインしないとマイルがつかない）</label>
+    <label><input type="checkbox">感謝DAYの対象ショップと倍率を確認した <a href="https://ec.jal.co.jp/shop/pages/campaign.aspx" target="_blank" rel="noopener">キャンペーン一覧</a></label>
+    <label><input type="checkbox">楽天は<b>JALマイレージパーク経由</b>で開いた <a href="https://partner.jal.co.jp/shop/?tp=15268" target="_blank" rel="noopener">楽天市場（パーク）</a>（経由前にカートに入れた商品は対象外）</label>
+    <label><input type="checkbox">Yahoo!も<b>パーク経由</b>で開いた <a href="https://partner.jal.co.jp/shop/?tp=15264" target="_blank" rel="noopener">Yahoo!ショッピング（パーク）</a></label>
+    <label><input type="checkbox">買い終わるまで、別のサイトを開かない（パークのマイルが外れることがある）</label>
+    <label><input type="checkbox">カードの割り振りどおりに払った（JAL Mall＝JALカード、楽天・Yahoo!＝マリオット など）</label>
+    <label><input type="checkbox">買ったあと、金額と画面のスクショを残した（記事用）</label>
+  </section>
+
+  <section class="panel">
+    <h2>計算のルールと注意</h2>
+    <ul class="note">
+      <li><b>JAL Mall</b>：税抜100円＝1マイル×倍率。LSPは通常分（100円＝1マイル）だけが対象で100マイル＝1LSP。JAL Mallは特約店なので、JALカード（プレミアム）なら100円＝2マイル（カード分は400マイル＝1LSP）</li>
+      <li><b>楽天・Yahoo!（パーク経由）</b>：300円＝1マイル、100マイル＝1LSP。楽天は初期値5倍（会員1倍＋楽天モバイル4倍）。クーポン・送料はパークのマイル対象外</li>
+      <li><b>マリオットカード</b>：100円＝3pt（年500万円のプラチナ条件に加算）。<b>JALカード</b>：100円＝1マイル</li>
+      <li>Amazonはパーク・Mallの対象外として計算（ショップのポイントとカード分のみ）</li>
+      <li>楽天の5と0のつく日（楽天カード払いが条件）など、使っていない特典は入れていません</li>
+      <li>積算率やキャンペーンは変わります。当日の各ページで確認してください。この計算は目安です（非公式）</li>
+      <li>楽天の「ポイント○倍」は商品ごとの倍率として、設定の倍率に上乗せして計算します（ショップ全体の倍率は含みません）。Yahoo!はストアポイントの倍率を上乗せします</li>
+      <li>「送料別」の商品は、送料を足した金額に直してください</li>
+      <li>データはこの端末のブラウザにだけ保存されます</li>
+    </ul>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn small" id="exp">リストを書き出す</button>
+      <label class="btn small">リストを読み込む<input type="file" id="imp" accept="application/json" hidden></label>
+    </div>
+  </section>
+  <p class="credit"><a href="https://developers.rakuten.com/" target="_blank" rel="noopener">Supported by Rakuten Developers</a>　／　<a href="https://developer.yahoo.co.jp/sitemap/" target="_blank" rel="noopener">Webサービス by Yahoo! JAPAN</a></p>
+</main>
+
+<div class="pass">
+  <div class="pass-in">
+    <div class="cell">
+      <div class="lbl">この組み合わせで買うと</div>
+      <div class="big num" id="tPay">0<small>円</small></div>
+      <div class="sub" id="tSub">実質 0円</div>
+    </div>
+    <div class="perf"></div>
+    <div class="cell">
+      <div class="lbl">もらえるもの</div>
+      <div class="big num gold" id="tMile">0<small>マイル</small></div>
+      <div class="sub" id="tSub2">LSP 0／マリオット 0pt</div>
+    </div>
+  </div>
+</div>
+
+<template id="tpl">
+  <div class="item">
+    <div class="item-head">
+      <input type="checkbox" class="chk" checked title="今回買う">
+      <div><label class="f">商品名</label><input class="name" placeholder="例：おむつ Lサイズ"></div>
+      <div><label class="f">数量</label><input class="qty num" type="number" min="1" value="1"></div>
+      <button class="btn small del" title="削除" style="margin-bottom:2px">削除</button>
+    </div>
+    <div class="sites">
+      <div class="site" data-s="mall"><div class="sn">JAL Mall <a class="lk" target="_blank" rel="noopener">開く</a></div>
+        <input class="p num" type="number" min="0" placeholder="税込">
+        <div class="mult"><input class="m num" type="number" min="1" step="1" placeholder="倍率"></div>
+        <div class="eff"></div><button class="btn pick">ここで買う</button></div>
+      <div class="site" data-s="rak"><div class="sn">楽天 <a class="lk" target="_blank" rel="noopener">探す</a></div>
+        <input class="p num" type="number" min="0" placeholder="税込"><div class="src"></div><div class="eff"></div><button class="btn pick">ここで買う</button></div>
+      <div class="site" data-s="yah"><div class="sn">Yahoo! <a class="lk" target="_blank" rel="noopener">探す</a></div>
+        <input class="p num" type="number" min="0" placeholder="税込"><div class="src"></div><div class="eff"></div><button class="btn pick">ここで買う</button></div>
+      <div class="site" data-s="amz"><div class="sn">Amazon <a class="lk" target="_blank" rel="noopener">探す</a></div>
+        <input class="p num" type="number" min="0" placeholder="税込"><div class="eff"></div><button class="btn pick">ここで買う</button></div>
+    </div>
+    <div class="item-foot"><button class="btn small primary srch">楽天・Yahoo!で検索</button><input class="jan num" placeholder="JANコード（任意）" inputmode="numeric" style="width:150px"><input class="url" placeholder="JAL Mallの商品URL（任意）" style="flex:1;min-width:160px"></div>
+    <div class="cands"></div>
+  </div>
+</template>
+
+<script>
+const KEY='matomegai-v1';/* v2: API検索つき */
+const $=s=>document.querySelector(s);
+const fmt=n=>Math.round(n).toLocaleString('ja-JP');
+const SITES=['mall','rak','yah','amz'];
+const SNAME={mall:'JAL Mall',rak:'楽天',yah:'Yahoo!',amz:'Amazon'};
+const SET_IDS=['day','mallBase','rakRate','yahRate','amzRate','premium','cMall','cRak','cYah','cAmz','vMile','vMar','vShop','vLsp'];
+
+let state={settings:{},items:[]};
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)state=s}catch(e){}
+
+function nextThanksDay(){const d=new Date();let y=d.getFullYear(),m=d.getMonth();if(d.getDate()>25){m++;if(m>11){m=0;y++}}return `${y}-${String(m+1).padStart(2,'0')}-25`}
+function seed(){
+  state.items=[
+    {name:'（見本）おむつ Lサイズ 4パック',qty:1,on:true,url:'',mall:{p:6480,m:6},rak:{p:6280},yah:{p:6350},amz:{p:5980}},
+    {name:'（見本）洗濯洗剤 詰め替え 超特大',qty:3,on:true,url:'',mall:{p:2940,m:4},rak:{p:2780},yah:{p:2850},amz:{p:2790}},
+    {name:'（見本）おしりふき 20個',qty:1,on:true,url:'',mall:{p:2380,m:6},rak:{p:2200},yah:{p:2150},amz:{p:2160}},
+  ];
+}
+if(!state.items.length&&!localStorage.getItem(KEY+'-seen')){seed();try{localStorage.setItem(KEY+'-seen','1')}catch(e){}}
+
+function S(){const o={};SET_IDS.forEach(id=>{const el=$('#'+id);o[id]=el.type==='number'?(+el.value||0):el.value});return o}
+
+function calcSite(site,price,mult,s,bonus){
+  if(!price)return null;
+  const prem=s.premium==='1';
+  const card={mall:s.cMall,rak:s.cRak,yah:s.cYah,amz:s.cAmz}[site];
+  let shopPt=0,shopMile=0,lspBase=0,cardMile=0,marPt=0;
+  if(site==='mall'){
+    const units=Math.floor(price/1.1/100);
+    const m=mult||s.mallBase||1;
+    shopMile=Math.floor(units*m);lspBase=units;
+    if(card==='jal')cardMile=Math.floor(price/100)*(prem?2:1);
+  }else{
+    const rate={rak:s.rakRate,yah:s.yahRate,amz:s.amzRate}[site]+(bonus||0);
+    shopPt=Math.floor(price/1.1*rate/100);
+    if(site!=='amz'){shopMile=Math.floor(price/300);lspBase=shopMile}
+    if(card==='jal')cardMile=Math.floor(price/100)*(prem?1:0.5);
+  }
+  if(card==='mar')marPt=Math.floor(price/100)*3;
+  const lsp=lspBase/100+cardMile/400;
+  const mile=shopMile+cardMile;
+  const back=shopPt*s.vShop+mile*s.vMile+marPt*s.vMar+lsp*s.vLsp;
+  return{price,mile,lsp,marPt,shopPt,back,eff:price-back};
+}
+
+function render(){
+  const s=state.settings;
+  SET_IDS.forEach(id=>{if(s[id]!==undefined)$('#'+id).value=s[id]});
+  if(!$('#day').value)$('#day').value=nextThanksDay();
+  const box=$('#items');box.innerHTML='';
+  state.items.forEach((it,i)=>{
+    const n=$('#tpl').content.firstElementChild.cloneNode(true);
+    n.querySelector('.name').value=it.name||'';n.querySelector('.qty').value=it.qty||1;
+    n.querySelector('.chk').checked=it.on!==false;n.querySelector('.url').value=it.url||'';n.querySelector('.jan').value=it.jan||'';
+    n.querySelectorAll('.site').forEach(el=>{const k=el.dataset.s;el.querySelector('.pick').onclick=()=>{it.pick=(it.pick===k)?'':k;calc()}});
+    n.querySelector('.srch').onclick=()=>searchItem(n,it);
+    if(it._c)drawCands(n,it);
+    SITES.forEach(k=>{const el=n.querySelector(`.site[data-s="${k}"]`);el.querySelector('.p').value=it[k]?.p??'';if(k==='mall')el.querySelector('.m').value=it.mall?.m??''});
+    n.querySelector('.del').onclick=()=>{if(confirm('この商品を削除しますか？')){state.items.splice(i,1);save();render()}};
+    n.addEventListener('input',e=>{if(e.target.classList.contains('qty')){const q=+e.target.value||1;['rak','yah'].forEach(k=>{const u=it[k]?.src?.unit;if(u){it[k].p=u*q;n.querySelector(`.site[data-s="${k}"] .p`).value=it[k].p}})}
+      if(e.target.classList.contains('p')){const k=e.target.closest('.site').dataset.s;if(it[k]){it[k].src=null;it[k].bonus=0}}read(n,it);calc()});
+    n.addEventListener('change',()=>{read(n,it);calc()});
+    n.dataset.i=i;box.appendChild(n);
+  });
+  calc();
+}
+function read(n,it){
+  it.name=n.querySelector('.name').value;it.qty=+n.querySelector('.qty').value||1;it.on=n.querySelector('.chk').checked;it.url=n.querySelector('.url').value.trim();it.jan=n.querySelector('.jan').value.trim();
+  SITES.forEach(k=>{const el=n.querySelector(`.site[data-s="${k}"]`);const p=el.querySelector('.p').value;it[k]=it[k]||{};it[k].p=p===''?'':+p;if(k==='mall'){const m=el.querySelector('.m').value;it.mall.m=m===''?'':+m}});
+}
+function links(n,it){
+  const q=encodeURIComponent((it.name||'').replace(/（見本）/,''));
+  const set=(k,u)=>{const a=n.querySelector(`.site[data-s="${k}"] .lk`);if(u){a.href=u;a.style.visibility='visible'}else a.style.visibility='hidden'};
+  set('mall',it.url||'https://ec.jal.co.jp/shop/default.aspx');
+  set('rak',q?`https://search.rakuten.co.jp/search/mall/${q}/`:'');
+  set('yah',q?`https://shopping.yahoo.co.jp/search?p=${q}`:'');
+  set('amz',q?`https://www.amazon.co.jp/s?k=${q}`:'');
+}
+function calc(){
+  const s=S();state.settings=s;
+  const agg={};SITES.forEach(k=>agg[k]={n:0,pay:0,mile:0,lsp:0,mar:0,shop:0});
+  let tPay=0,tEff=0,tMile=0,tLsp=0,tMar=0,mallOnly={pay:0,eff:0,ok:true,any:false},countOn=0;
+  document.querySelectorAll('.item').forEach(n=>{
+    const it=state.items[+n.dataset.i];links(n,it);
+    n.classList.toggle('off',it.on===false);
+    let best=null;
+    SITES.forEach(k=>{
+      const el=n.querySelector(`.site[data-s="${k}"]`);el.classList.remove('best');
+      const r=calcSite(k,+(it[k]?.p||0),+(it.mall?.m||0),s,+(it[k]?.bonus||0));
+      el._r=r;el.classList.remove('chosen');
+      const src=el.querySelector('.src');if(src){const o=it[k]?.src;src.innerHTML=o?`<a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.shop)}</a>${o.note?' · '+esc(o.note):''}`:''}
+      el.querySelector('.eff').innerHTML=r?`実質<b class="num">${fmt(r.eff)}円</b>${fmt(r.mile)}マイル・LSP ${r.lsp.toFixed(2)}${r.marPt?`<br>マリオット ${fmt(r.marPt)}pt`:''}${r.shopPt?`<br>ポイント ${fmt(r.shopPt)}`:''}`:'<span style="opacity:.6">未入力</span>';
+      if(r&&(!best||r.eff<best.r.eff))best={k,r,el};
+    });
+    if(best)best.el.classList.add('best');
+    let use=best;
+    if(it.pick){const el=n.querySelector(`.site[data-s="${it.pick}"]`);if(el._r){use={k:it.pick,r:el._r,el};el.classList.add('chosen')}}
+    if(it.on!==false&&use){const best=use;
+      countOn++;
+      const a=agg[best.k];a.n++;a.pay+=best.r.price;a.mile+=best.r.mile;a.lsp+=best.r.lsp;a.mar+=best.r.marPt;a.shop+=best.r.shopPt;
+      tPay+=best.r.price;tEff+=best.r.eff;tMile+=best.r.mile;tLsp+=best.r.lsp;tMar+=best.r.marPt;
+      const mr=n.querySelector('.site[data-s="mall"]')._r;
+      if(mr){mallOnly.pay+=mr.price;mallOnly.eff+=mr.eff;mallOnly.any=true}else mallOnly.ok=false;
+    }
+  });
+  const rows=SITES.filter(k=>agg[k].n).map(k=>{const a=agg[k];return `<tr><td>${SNAME[k]}</td><td class="num">${a.n}</td><td class="num">${fmt(a.pay)}</td><td class="num">${fmt(a.mile)}</td><td class="num">${a.lsp.toFixed(2)}</td><td class="num">${fmt(a.mar)}</td><td class="num">${fmt(a.shop)}</td></tr>`});
+  $('#bySite').innerHTML=rows.length?rows.join('')+`<tr class="tot"><td>合計</td><td class="num">${countOn}</td><td class="num">${fmt(tPay)}</td><td class="num">${fmt(tMile)}</td><td class="num">${tLsp.toFixed(2)}</td><td class="num">${fmt(tMar)}</td><td class="num">${fmt(SITES.reduce((x,k)=>x+agg[k].shop,0))}</td></tr>`:'<tr><td colspan="7" style="color:var(--mute)">価格を入れると、ショップごとの買い物リストが出ます</td></tr>';
+  $('#compare').textContent=(mallOnly.any&&mallOnly.ok&&countOn)?`参考：全部JAL Mallで買った場合は 支払い${fmt(mallOnly.pay)}円・実質${fmt(mallOnly.eff)}円。この組み合わせだと実質で${fmt(mallOnly.eff-tEff)}円${mallOnly.eff-tEff>=0?'おトク':'高く'}なります。LSPは小数点以下も積み上がります（100マイル・400マイルごとに1）。`:'';
+  $('#tPay').innerHTML=`${fmt(tPay)}<small>円</small>`;
+  $('#tSub').textContent=`実質 ${fmt(tEff)}円（${countOn}品目）`;
+  $('#tMile').innerHTML=`${fmt(tMile)}<small>マイル</small>`;
+  $('#tSub2').textContent=`LSP ${tLsp.toFixed(2)}／マリオット ${fmt(tMar)}pt`;
+  save();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state,(k,v)=>k==='_c'?undefined:v))}catch(e){}}
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- API ---------- */
+const KKEY='matomegai-keys';
+let keys={};try{keys=JSON.parse(localStorage.getItem(KKEY))||{}}catch(e){}
+function keyState(){const r=keys.rakId&&keys.rakKey,y=keys.yah;$('#keyState').textContent=(r||y)?`設定済み：${[r?'楽天':'',y?'Yahoo!':''].filter(Boolean).join('・')}`:'未設定';$('#keyState').style.color=(r||y)?'':'var(--crane)'}
+$('#kRakId').value=keys.rakId||'';$('#kRakKey').value=keys.rakKey||'';$('#kYah').value=keys.yah||'';keyState();
+if(!keys.rakId&&!keys.yah)$('#keyBox').open=true;
+$('#kSave').onclick=()=>{keys={rakId:$('#kRakId').value.trim(),rakKey:$('#kRakKey').value.trim(),yah:$('#kYah').value.trim()};try{localStorage.setItem(KKEY,JSON.stringify(keys))}catch(e){};keyState();$('#kMsg').className='msg';$('#kMsg').textContent='保存しました'};
+$('#kDel').onclick=()=>{if(!confirm('保存したキーを消しますか？'))return;keys={};localStorage.removeItem(KKEY);['#kRakId','#kRakKey','#kYah'].forEach(x=>$(x).value='');keyState()};
+$('#kTest').onclick=async()=>{const m=$('#kMsg');m.className='msg';m.textContent='テスト中…';const out=[];
+  if(keys.rakId){try{const r=await rakSearch('トイレットペーパー','');out.push(`楽天OK（${r.length}件）`)}catch(e){out.push('楽天NG：'+e.message)}}else out.push('楽天：キー未保存');
+  if(keys.yah){try{const r=await yahSearch('トイレットペーパー','');out.push(`Yahoo!OK（${r.length}件）`)}catch(e){out.push('Yahoo!NG：'+e.message)}}else out.push('Yahoo!：キー未保存');
+  m.textContent=out.join('　');if(out.some(t=>t.includes('NG')))m.className='msg err'};
+
+let lastRak=0;const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function rakSearch(q,jan){
+  if(!keys.rakId||!keys.rakKey)throw new Error('キー未設定');
+  const gap=Date.now()-lastRak;if(gap<1100)await wait(1100-gap);lastRak=Date.now();
+  const u=new URL('https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701');
+  const P={applicationId:keys.rakId,accessKey:keys.rakKey,keyword:jan||q,hits:10,format:'json',formatVersion:2,availability:1,elements:'itemName,itemPrice,itemUrl,shopName,postageFlag,pointRate'};
+  Object.entries(P).forEach(([k,v])=>u.searchParams.set(k,v));
+  let res;try{res=await fetch(u)}catch(e){throw new Error('通信できません')}
+  const j=await res.json().catch(()=>({}));
+  if(res.status===404)return[];
+  if(!res.ok){const d=j.error_description||j.errors?.errorMessage||('エラー'+res.status);throw new Error(res.status===403?'キーか許可サイトの設定を確認（'+d+'）':res.status===429?'検索が多すぎます。少し待って再検索':d)}
+  return (j.items||[]).map(x=>({name:x.itemName,price:x.itemPrice,url:x.itemUrl,shop:x.shopName,ship:x.postageFlag===0?'送料込':'送料別',shipWarn:x.postageFlag!==0,bonus:Math.max((x.pointRate||1)-1,0)}));
+}
+let jp=0;
+function yahSearch(q,jan){
+  if(!keys.yah)return Promise.reject(new Error('キー未設定'));
+  return new Promise((ok,ng)=>{
+    const cb='__yh'+(++jp);const sc=document.createElement('script');
+    const u=new URL('https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch');
+    const P={appid:keys.yah,results:10,in_stock:'true',callback:cb};if(jan)P.jan_code=jan;else P.query=q;
+    Object.entries(P).forEach(([k,v])=>u.searchParams.set(k,v));
+    const done=()=>{delete window[cb];sc.remove();clearTimeout(t)};
+    const t=setTimeout(()=>{done();ng(new Error('応答なし（Client IDかサイトURLの設定を確認）'))},10000);
+    window[cb]=j=>{done();if(j.Error||j.error){ng(new Error('Client IDかサイトURLの設定を確認'));return}
+      ok((j.hits||[]).map(x=>{const c=x.shipping?.code;return{name:x.name,price:x.price,url:x.url,shop:x.seller?.name||'',ship:c===2?'送料無料':c===3?'条件付き送料無料':'送料別',shipWarn:c!==2,bonus:+(x.point?.lyLimitedBonusTimes||0)}}))};
+    sc.onerror=()=>{done();ng(new Error('Client IDかサイトURLの設定を確認'))};
+    sc.src=u.toString();document.body.appendChild(sc);
+  });
+}
+async function searchItem(n,it){
+  read(n,it);
+  const q=(it.name||'').replace(/（見本）/,'').trim();
+  if(!q&&!it.jan){alert('商品名かJANコードを入れてください');return}
+  if(!keys.rakId&&!keys.yah){alert('先にAPIキーを入れてください');$('#keyBox').open=true;$('#keyBox').scrollIntoView({behavior:'smooth'});return}
+  it._c={rak:{loading:true},yah:{loading:true}};drawCands(n,it);
+  const job=async(k,fn)=>{try{const r=await fn(q,it.jan);r.sort((a,b)=>a.price-b.price);it._c[k]={list:r.slice(0,6)}}catch(e){it._c[k]={err:e.message}}drawCands(n,it)};
+  await Promise.all([keys.yah?job('yah',yahSearch):(it._c.yah={err:'キー未設定'}),keys.rakId?job('rak',rakSearch):(it._c.rak={err:'キー未設定'})]);
+  drawCands(n,it);
+}
+function drawCands(n,it){
+  const box=n.querySelector('.cands');const c=it._c;if(!c){box.innerHTML='';return}
+  const qty=it.qty||1;
+  const col=(k,title)=>{const d=c[k]||{};let h=`<div class="cbox"><h4><span>${title}の候補（安い順）</span><span>×${qty}個で計算</span></h4>`;
+    if(d.loading)h+='<div class="msg">検索中…</div>';
+    else if(d.err)h+=`<div class="msg err">${esc(d.err)}</div>`;
+    else if(!d.list.length)h+='<div class="msg">見つかりませんでした（商品名を短くしてみてください）</div>';
+    else d.list.forEach((x,i)=>{const picked=it[k]?.src?.url===x.url;h+=`<div class="cand${picked?' picked':''}"><div><a class="cn" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a><div class="cm">${esc(x.shop)} · <span class="${x.shipWarn?'warn':''}">${x.ship}</span>${x.bonus?` · ポイント+${x.bonus}${k==='rak'?'倍':'%'}`:''}</div></div><div style="text-align:right"><div class="cp num">${fmt(x.price)}円</div><button class="btn small" data-k="${k}" data-i="${i}">${picked?'選択中':'これにする'}</button></div></div>`});
+    return h+'</div>'};
+  box.innerHTML=col('rak','楽天')+col('yah','Yahoo!');
+  box.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,x=c[k].list[+b.dataset.i];
+    it[k]=it[k]||{};it[k].p=x.price*(it.qty||1);it[k].bonus=x.bonus;it[k].src={url:x.url,shop:x.shop,unit:x.price,note:x.shipWarn?x.ship:''};
+    n.querySelector(`.site[data-s="${k}"] .p`).value=it[k].p;calc();drawCands(n,it)});
+}
+$('#searchAll').onclick=async()=>{
+  if(!keys.rakId&&!keys.yah){alert('先にAPIキーを入れてください');$('#keyBox').open=true;return}
+  const b=$('#searchAll');b.disabled=true;const nodes=[...document.querySelectorAll('.item')];
+  for(let i=0;i<nodes.length;i++){const n=nodes[i],it=state.items[+n.dataset.i];if(it.on===false)continue;b.textContent=`検索中 ${i+1}/${nodes.length}`;await searchItem(n,it)}
+  b.disabled=false;b.textContent='全部検索'};
+
+SET_IDS.forEach(id=>{$('#'+id).addEventListener('input',calc);$('#'+id).addEventListener('change',calc)});
+$('#add').onclick=()=>{state.items.push({name:'',qty:1,on:true,url:'',mall:{p:'',m:''},rak:{p:''},yah:{p:''},amz:{p:''}});save();render();const l=document.querySelectorAll('.item .name');l[l.length-1].focus()};
+$('#clearPrices').onclick=()=>{if(!confirm('商品名は残して、価格だけ消しますか？（次の感謝DAY用）'))return;state.items.forEach(it=>{it.pick='';delete it._c;SITES.forEach(k=>{if(it[k]){it[k].p='';it[k].src=null;it[k].bonus=0}})});save();render()};
+$('#clearSample').onclick=()=>{state.items=state.items.filter(it=>!(it.name||'').startsWith('（見本）'));save();render()};
+$('#exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:'application/json'}));a.download=`matomegai-${$('#day').value||'list'}.json`;a.click()};
+$('#imp').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const s=JSON.parse(t);if(!s.items)throw 0;if(confirm('今のリストを読み込んだリストで置き換えますか？')){state=s;save();render()}}catch(err){alert('読み込めないファイルです')}})};
+render();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
