@@ -106,7 +106,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 <header>
   <div class="eyebrow">JAL MALL THANKS DAY · BULK BUY</div>
   <h1>感謝DAYまとめ買いリスト</h1>
-  <p>よく買う日用品を登録しておき、感謝DAYの日に価格をそろえるだけ。楽天・Yahoo!は検索して選ぶだけ、JAL MallとAmazonは手入力。マイル・LSP・ポイント込みの「実質価格」で、どこで買うかが一目でわかります。</p>
+  <p><b>登録なし・手入力だけで使えます。</b>よく買う日用品を登録しておき、感謝DAYの日に価格をそろえるだけ。（自分のAPIキーを入れると楽天・Yahoo!は自動検索）。マイル・LSP・ポイント込みの「実質価格」で、どこで買うかが一目でわかります。</p>
 </header>
 
 <main>
@@ -135,20 +135,6 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
         <div><label class="f">ショップ1pt＝円</label><input type="number" id="vShop" step="0.01" value="1" class="num"></div>
         <div><label class="f">1LSP＝円（任意）</label><input type="number" id="vLsp" step="1" value="0" class="num"></div>
       </div>
-    </details>
-  </section>
-
-  <section class="panel">
-    <h2>APIキー（楽天・Yahoo!の価格を自動で検索） <span class="keyok" id="keyState"></span></h2>
-    <details id="keyBox"><summary>キーを入れる・変える</summary>
-      <div class="g3" style="margin-top:8px">
-        <div><label class="f">楽天 アプリID</label><input id="kRakId" autocomplete="off" spellcheck="false"></div>
-        <div><label class="f">楽天 アクセスキー</label><input id="kRakKey" type="password" autocomplete="off"></div>
-        <div><label class="f">Yahoo! Client ID</label><input id="kYah" type="password" autocomplete="off"></div>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small primary" id="kSave">保存</button><button class="btn small" id="kTest">テスト検索</button><button class="btn small" id="kDel">キーを消す</button></div>
-      <p class="msg" id="kMsg"></p>
-      <ul class="note"><li>キーはこの端末のブラウザにだけ保存されます（GitHubやリストの書き出しには入りません）</li><li>このURL（rikukara-4star.github.io）以外で開くと、楽天・Yahoo!に拒否されます</li></ul>
     </details>
   </section>
 
@@ -206,6 +192,20 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
       <label class="btn small">リストを読み込む<input type="file" id="imp" accept="application/json" hidden></label>
     </div>
   </section>
+  <section class="panel">
+    <h2>（任意）楽天・Yahoo!の自動検索を使う <span class="keyok" id="keyState"></span></h2>
+    <details id="keyBox"><summary>自分のAPIキーを入れる・変える</summary>
+      <div class="g3" style="margin-top:8px">
+        <div><label class="f">楽天 アプリID</label><input id="kRakId" autocomplete="off" spellcheck="false"></div>
+        <div><label class="f">楽天 アクセスキー</label><input id="kRakKey" type="password" autocomplete="off"></div>
+        <div><label class="f">Yahoo! Client ID</label><input id="kYah" type="password" autocomplete="off"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small primary" id="kSave">保存</button><button class="btn small" id="kTest">テスト検索</button><button class="btn small" id="kDel">キーを消す</button></div>
+      <p class="msg" id="kMsg"></p>
+      <ul class="note"><li>キーがなくても、価格を手で入れればすべての計算が使えます</li><li>キーは楽天ウェブサービス・Yahoo!デベロッパーネットワークで無料で取得できます</li><li>キーはこの端末のブラウザにだけ保存されます（GitHubやリストの書き出しには入りません）</li><li>シークレットウィンドウでは保存されません（閉じると消えます）</li></ul>
+    </details>
+  </section>
+
   <p class="credit"><a href="https://developers.rakuten.com/" target="_blank" rel="noopener">Supported by Rakuten Developers</a>　／　<a href="https://developer.yahoo.co.jp/sitemap/" target="_blank" rel="noopener">Webサービス by Yahoo! JAPAN</a></p>
 </main>
 
@@ -251,7 +251,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 </template>
 
 <script>
-const KEY='matomegai-v1';/* v2.2: API検索・店舗ごとの買い物リスト */
+const KEY='matomegai-v1';/* v2.3: API検索・店舗ごとの買い物リスト */
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
 const SITES=['mall','rak','yah','amz'];
@@ -391,7 +391,6 @@ const KKEY='matomegai-keys';
 let keys={};try{keys=JSON.parse(localStorage.getItem(KKEY))||{}}catch(e){}
 function keyState(){const r=keys.rakId&&keys.rakKey,y=keys.yah;$('#keyState').textContent=(r||y)?`設定済み：${[r?'楽天':'',y?'Yahoo!':''].filter(Boolean).join('・')}`:'未設定';$('#keyState').style.color=(r||y)?'':'var(--crane)'}
 $('#kRakId').value=keys.rakId||'';$('#kRakKey').value=keys.rakKey||'';$('#kYah').value=keys.yah||'';keyState();
-if(!keys.rakId&&!keys.yah)$('#keyBox').open=true;
 $('#kSave').onclick=()=>{keys={rakId:$('#kRakId').value.trim(),rakKey:$('#kRakKey').value.trim(),yah:$('#kYah').value.trim()};try{localStorage.setItem(KKEY,JSON.stringify(keys))}catch(e){};keyState();$('#kMsg').className='msg';$('#kMsg').textContent='保存しました'};
 $('#kDel').onclick=()=>{if(!confirm('保存したキーを消しますか？'))return;keys={};localStorage.removeItem(KKEY);['#kRakId','#kRakKey','#kYah'].forEach(x=>$(x).value='');keyState()};
 $('#kTest').onclick=async()=>{const m=$('#kMsg');m.className='msg';m.textContent='テスト中…';const out=[];
@@ -417,7 +416,7 @@ let jp=0;
 function yahSearch(q,jan){
   if(!keys.yah)return Promise.reject(new Error('キー未設定'));
   return new Promise((ok,ng)=>{
-    const cb='__yh'+(++jp);const sc=document.createElement('script');sc.referrerPolicy='no-referrer-when-downgrade';
+    const cb='__yh'+(++jp);const sc=document.createElement('script');sc.referrerPolicy='no-referrer';
     const u=new URL('https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch');
     const P={appid:keys.yah,results:10,in_stock:'true',callback:cb};if(jan)P.jan_code=jan;else P.query=q;
     Object.entries(P).forEach(([k,v])=>u.searchParams.set(k,v));
@@ -433,7 +432,7 @@ async function searchItem(n,it){
   read(n,it);
   const q=(it.name||'').replace(/（見本）/,'').trim();
   if(!q&&!it.jan){alert('商品名かJANコードを入れてください');return}
-  if(!keys.rakId&&!keys.yah){alert('先にAPIキーを入れてください');$('#keyBox').open=true;$('#keyBox').scrollIntoView({behavior:'smooth'});return}
+  if(!keys.rakId&&!keys.yah){alert('自動検索には、ページ下の「自動検索を使う」でAPIキーの設定が必要です。キーがなくても価格の手入力で使えます');$('#keyBox').open=true;$('#keyBox').scrollIntoView({behavior:'smooth'});return}
   it._c={rak:{loading:true},yah:{loading:true}};drawCands(n,it);
   const job=async(k,fn)=>{try{const r=await fn(q,it.jan);r.sort((a,b)=>a.price-b.price);it._c[k]={list:r.slice(0,6)}}catch(e){it._c[k]={err:e.message}}drawCands(n,it)};
   await Promise.all([keys.yah?job('yah',yahSearch):(it._c.yah={err:'キー未設定'}),keys.rakId?job('rak',rakSearch):(it._c.rak={err:'キー未設定'})]);
@@ -454,7 +453,7 @@ function drawCands(n,it){
     n.querySelector(`.site[data-s="${k}"] .p`).value=it[k].p;calc();drawCands(n,it)});
 }
 $('#searchAll').onclick=async()=>{
-  if(!keys.rakId&&!keys.yah){alert('先にAPIキーを入れてください');$('#keyBox').open=true;return}
+  if(!keys.rakId&&!keys.yah){alert('自動検索には、ページ下の「自動検索を使う」でAPIキーの設定が必要です。キーがなくても価格の手入力で使えます');$('#keyBox').open=true;$('#keyBox').scrollIntoView({behavior:'smooth'});return}
   const b=$('#searchAll');b.disabled=true;const nodes=[...document.querySelectorAll('.item')];
   for(let i=0;i<nodes.length;i++){const n=nodes[i],it=state.items[+n.dataset.i];if(it.on===false)continue;b.textContent=`検索中 ${i+1}/${nodes.length}`;await searchItem(n,it)}
   b.disabled=false;b.textContent='全部検索'};
