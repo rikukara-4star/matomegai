@@ -263,14 +263,16 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
     <div class="urlmsg msg"></div>
     <details class="pastebox"><summary>JAL Mallの商品ページを貼り付けて、商品名・価格・マイルを入れる</summary>
       <p class="note" style="padding:4px 0">JAL Mallの商品ページを開き、ページ全体を選択してコピー（PC：Ctrl+A → Ctrl+C／スマホ：長押し →「すべてを選択」→「コピー」）して、下に貼り付けてください</p>
-      <textarea class="paste" rows="3" placeholder="ここに貼り付け" style="width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:8px"></textarea>
+      <textarea class="paste" rows="3" placeholder="ここを長押し（PCは右クリック）→「貼り付け」" style="width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:8px"></textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center"><button class="btn small primary doPaste">読み取る</button><button class="btn small clipPaste">コピーした内容を貼り付けて読み取る</button><span class="pinfo msg"></span></div>
+      <div class="pdebug" style="display:none;margin-top:6px"><p class="msg err">読み取れませんでした。下の内容をコピーして、チャットに送ってください（直します）</p><textarea class="pdbg" rows="4" readonly style="width:100%;font-size:11px;border:1px solid var(--line);border-radius:9px;padding:6px"></textarea></div>
     </details>
     <div class="cands"></div>
   </div>
 </template>
 
 <script>
-const KEY='matomegai-v1';/* v3.0: API検索・店舗ごとの買い物リスト */
+const KEY='matomegai-v1';/* v3.1: API検索・店舗ごとの買い物リスト */
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
 const SITES=['mall','rak','yah','amz'];
@@ -330,7 +332,11 @@ function render(){
     n.querySelector('.srch').onclick=()=>searchItem(n,it);
     n.querySelector('.url').addEventListener('change',()=>{read(n,it);urlMsg(n,it,true);calc()});
     urlMsg(n,it,false);
-    n.querySelector('.paste').addEventListener('input',e=>{const v=e.target.value;if(v.length>30)applyPaste(n,it,v)});
+    const pa=n.querySelector('.paste');
+    pa.addEventListener('paste',e=>{const cd=e.clipboardData;if(!cd)return;let t=cd.getData('text/plain');if(!t){const h=cd.getData('text/html');if(h)t=htmlToText(h)}if(t){e.preventDefault();pa.value=t;applyPaste(n,it,t)}});
+    pa.addEventListener('input',()=>{n.querySelector('.pinfo').textContent=pa.value?`${pa.value.length}文字`:''});
+    n.querySelector('.doPaste').onclick=()=>applyPaste(n,it,pa.value);
+    n.querySelector('.clipPaste').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t){alert('コピーした文字が見つかりません。JAL Mallのページで文字を選択してコピーしてください');return}pa.value=t;applyPaste(n,it,t)}catch(e){alert('このブラウザでは自動の貼り付けが許可されていません。上の欄を長押し（右クリック）して「貼り付け」を選んでください')}};
     if(it._c)drawCands(n,it);
     SITES.forEach(k=>{const el=n.querySelector(`.site[data-s="${k}"]`);el.querySelector('.p').value=it[k]?.p??'';if(k==='mall')el.querySelector('.m').value=it.mall?.m??''});
     n.querySelector('.del').onclick=()=>{if(confirm('この商品を削除しますか？')){state.items.splice(i,1);save();render()}};
@@ -366,23 +372,33 @@ function urlMsg(n,it,fromInput){
   box.className='urlmsg msg';
   box.innerHTML=`JAN ${r.jan} を読み取りました${r.set?`。URL末尾に「×${r.set}」あり（${r.set}個セットの可能性。数量はご自身で確認してください）`:''}`;
 }
+function htmlToText(h){const d=document.createElement('div');d.innerHTML=h.replace(/<(br|\/p|\/div|\/li|\/h\d|\/tr|\/dt|\/dd|\/span)[^>]*>/gi,'$&\n');return d.innerText||d.textContent||''}
 function parseMallText(t){
-  const L=String(t||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
-  const isPrice=x=>/^[\d,]+\s*円\s*[（(]\s*税込\s*[)）]$/.test(x);
-  const i=L.findIndex(isPrice);
-  if(i<1)return{err:'商品名と価格が見つかりませんでした。商品ページ全体をコピーしたか確認してください'};
-  const price=+L[i].replace(/[^\d]/g,'');const name=L[i-1];
-  let shop=(L.find(x=>/JAL ?Mall店$/.test(x))||'').replace(/\s*JAL ?Mall店$/,'').trim();if(!shop&&i>=2)shop=L[i-2];
-  let mile=0,times=0;for(let k=i+1;k<Math.min(i+6,L.length);k++){const m=L[k].match(/積算\s*([\d,]+)\s*マイル\s*[（(]\s*(\d+)\s*倍/);if(m){mile=+m[1].replace(/,/g,'');times=+m[2];break}}
-  const all=L.join(' ');
-  const th=(all.match(/([\d,]+)\s*円\s*[（(]?税込[)）]?\s*以上\s*送料無料/)||[])[1];
-  const fee=(all.match(/送料\s*(?:全国)?\s*一律\s*([\d,]+)\s*円/)||all.match(/全国送料一律\s*([\d,]+)\s*円/)||[])[1];
+  const L=String(t||'').replace(/\u00a0/g,' ').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+  if(!L.length)return{err:'何も貼り付けられていません'};
+  const J=L.join('\n');
+  const mm=[...J.matchAll(/積算\s*([\d,]+)\s*マイル\s*[（(]\s*(\d+)\s*倍/g)];
+  const prices=[...J.matchAll(/([\d,]{2,})\s*円\s*[（(]\s*税込\s*[)）](?!\s*以上)/g)].filter(m=>!/以上|送料/.test(J.slice(m.index+m[0].length,m.index+m[0].length+6)));
+  if(!prices.length)return{err:'価格（○円(税込)）が見つかりませんでした'};
+  let pm=prices[0];if(mm.length){const mi=mm[0].index;const before=prices.filter(p=>p.index<mi);if(before.length)pm=before[before.length-1]}
+  const price=+pm[1].replace(/,/g,'');
+  const shopLine=L.find(x=>/JAL ?Mall店/.test(x))||'';
+  const shop=shopLine.replace(/\s*JAL ?Mall店.*$/,'').trim();
+  const bad=x=>/円|税込|送料|マイル|在庫|カート|購入|探す|ログイン|お気に入り|JAL ?Mall|^[\d,\s\-+]+$|^ホーム|レビュー|ポイント|発送|返品/.test(x)||(shop&&x===shop)||x.length<4;
+  const lineIdx=J.slice(0,pm.index).split('\n').length-1;
+  let name='';for(let k=lineIdx-1;k>=0&&k>=lineIdx-8;k--){const cand=L[k];if(!bad(cand)){name=cand;break}}
+  if(!name){const h=L.find(x=>/^ホーム\s+/.test(x));if(h)name=h.replace(/^ホーム\s+/,'').replace(/\.\.\.$|…$/,'')}
+  const mile=mm.length?+mm[0][1].replace(/,/g,''):0,times=mm.length?+mm[0][2]:0;
+  const th=(J.match(/([\d,]+)\s*円\s*[（(]?\s*税込\s*[)）]?\s*以上\s*送料無料/)||[])[1];
+  const fee=(J.match(/送料\s*(?:全国)?\s*一律\s*([\d,]+)\s*円/)||J.match(/全国送料一律\s*([\d,]+)\s*円/)||[])[1];
   const set=(name.match(/(\d+)\s*個セット/)||[])[1];
   return{price,name,shop,mile,times,set:set?+set:0,ship:(th||fee)?{th:th?+th.replace(/,/g,''):0,fee:fee?+fee.replace(/,/g,''):0}:null};
 }
 function applyPaste(n,it,t){
-  const r=parseMallText(t);const box=n.querySelector('.urlmsg');
-  if(r.err){box.className='urlmsg msg err';box.textContent=r.err;return}
+  const r=parseMallText(t);const box=n.querySelector('.urlmsg');const dbg=n.querySelector('.pdebug');
+  if(r.err){box.className='urlmsg msg err';box.textContent=r.err+'（JAL Mallの商品ページで全体を選択してコピーしたか確認してください）';if(t){dbg.style.display='';n.querySelector('.pdbg').value=String(t).slice(0,3000)}return}
+  dbg.style.display='none';
+  if(!r.name){r.name=it.name&&!/（見本）/.test(it.name)?it.name:'（商品名を入れてください）'}
   it.name=r.name;n.querySelector('.name').value=r.name;
   if(r.set){it.qty=r.set;n.querySelector('.qty').value=r.set}
   it.mall=it.mall||{};it.mall.p=r.price;n.querySelector('.site[data-s="mall"] .p').value=r.price;
