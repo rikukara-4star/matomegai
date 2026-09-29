@@ -149,7 +149,8 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
   <section class="panel">
     <h2>まとめ買いリスト <span><button class="btn small primary" id="searchAll">全部検索</button> <button class="btn small" id="clearPrices">価格だけクリア</button> <button class="btn small" id="clearSample">見本を消す</button></span></h2>
     <ul class="note" style="margin-bottom:10px">
-      <li>価格は<b>その数量分の税込合計</b>を入れてください（送料込みで比べたい時は送料も足す）</li>
+      <li>価格は<b>その数量分の税込合計</b>を入れてください。<b>送料は下の「買い物の順番」でお店ごとに</b>入れます（お店でまとめると無料になりやすい）</li>
+      <li>JAL Mallの商品は、商品ページを<b>丸ごとコピーして貼り付け</b>ると、商品名・価格・倍率・送料条件が入ります。JANを使う楽天検索のために、URLも貼ってください（コピーにはURLが入りません）</li>
       <li>JAL Mallはショップごとに倍率が違うので、各商品の「倍率」に<b>100円で何マイルか</b>を入れます</li>
       <li>チェックを外した商品は合計に入りません（今回は買わない物）</li>
       <li>「楽天で検索」で楽天の候補が出ます（APIキーを入れた人のみ。Yahoo!・Amazonは「探す」から開いて手入力）。<b>「これにする」を押すと、数量分の価格が入ります</b>（JANコードを入れると同じ商品を探しやすくなります）</li>
@@ -194,9 +195,10 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
       <li>楽天の5と0のつく日（楽天カード払いが条件）など、使っていない特典は入れていません</li>
       <li>積算率やキャンペーンは変わります。当日の各ページで確認してください。この計算は目安です（非公式）</li>
       <li>楽天の「ポイント○倍」は商品ごとの倍率として、設定の倍率に上乗せして計算します（ショップ全体の倍率は含みません）</li>
-      <li>「送料別」の商品は、送料を足した金額に直してください</li>
+      <li>送料はお店ごとに計算し、支払額にだけ足します（マイル・LSP・ポイントの対象外）。JAL Mallは貼り付けたページの「○円以上送料無料・一律○円」から自動計算します</li>
       <li><b>JAL Mallで「JALお買いものポイント」（マイルから交換）で払った分は、マイルもLSPもつきません</b>（JAL公式）。マイルは航空券に使うほうが価値が高いことが多いので、このアプリではポイント払いは想定していません</li>
       <li><b>楽天で楽天ポイントを使って払った分も</b>、パークのマイル（LSP対象）と楽天ポイント（通常1倍＋楽天モバイル分）はつきます（JAL公式・楽天市場FAQ）。つかないのは、カードで払わなかった分のボンヴォイポイントだけです</li>
+      <li><b>JAL Mallの商品ページの貼り付け</b>：あなたがコピーした文字から、商品名・税込価格・表示マイルを読み取ります（アプリがJAL Mallに自動でアクセスすることはありません）。ページの作りが変わると読めなくなることがあります</li>
       <li>JAL MallのURLからJANコードを読み取るのは目安です（最後の数字で正しいJANか確認しています）。<b>検索結果の商品名は必ずご自身で確認</b>してください</li>
       <li>データはこの端末・このブラウザにだけ保存されます。<b>PCとスマホは別々</b>です。移すときは下の「別の端末に移す」を使ってください（APIキーは移りません）</li>
     </ul>
@@ -259,27 +261,31 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
     </div>
     <div class="item-foot"><button class="btn small primary srch">楽天で検索</button><input class="jan num" placeholder="JANコード（任意）" inputmode="numeric" style="width:150px"><input class="url" placeholder="JAL Mallの商品URLを貼る（JANを自動で読み取り）" style="flex:1;min-width:160px"></div>
     <div class="urlmsg msg"></div>
+    <details class="pastebox"><summary>JAL Mallの商品ページを貼り付けて、商品名・価格・マイルを入れる</summary>
+      <p class="note" style="padding:4px 0">JAL Mallの商品ページを開き、ページ全体を選択してコピー（PC：Ctrl+A → Ctrl+C／スマホ：長押し →「すべてを選択」→「コピー」）して、下に貼り付けてください</p>
+      <textarea class="paste" rows="3" placeholder="ここに貼り付け" style="width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:8px"></textarea>
+    </details>
     <div class="cands"></div>
   </div>
 </template>
 
 <script>
-const KEY='matomegai-v1';/* v2.8: API検索・店舗ごとの買い物リスト */
+const KEY='matomegai-v1';/* v3.0: API検索・店舗ごとの買い物リスト */
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
 const SITES=['mall','rak','yah','amz'];
 const SNAME={mall:'JAL Mall',rak:'楽天',yah:'Yahoo!',amz:'Amazon'};
 const SET_IDS=['cardSet','vUse','day','mallBase','rakRate','yahRate','amzRate','premium','cMall','cRak','cYah','cAmz','vMile','vMar','vShop','vLsp'];
 
-let state={settings:{},items:[]};
+let state={settings:{},items:[],mallRules:{'サンドラッグ e-shop':{th:3980,fee:600}}};
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)state=s}catch(e){}
 
 function nextThanksDay(){const d=new Date();let y=d.getFullYear(),m=d.getMonth();if(d.getDate()>25){m++;if(m>11){m=0;y++}}return `${y}-${String(m+1).padStart(2,'0')}-25`}
 function seed(){
   state.items=[
-    {name:'（見本）おむつ Lサイズ 4パック',qty:1,on:true,url:'',mall:{p:6480,m:6},rak:{p:6280},yah:{p:6350},amz:{p:5980}},
-    {name:'（見本）洗濯洗剤 詰め替え 超特大',qty:3,on:true,url:'',mall:{p:2940,m:4},rak:{p:2780},yah:{p:2850},amz:{p:2790}},
-    {name:'（見本）おしりふき 20個',qty:1,on:true,url:'',mall:{p:2380,m:6},rak:{p:2200},yah:{p:2150},amz:{p:2160}},
+    {name:'（見本）おむつ Lサイズ 4パック',qty:1,on:true,mallShop:'サンドラッグ e-shop',url:'',mall:{p:6480,m:6},rak:{p:6280},yah:{p:6350},amz:{p:5980}},
+    {name:'（見本）洗濯洗剤 詰め替え 超特大',qty:3,on:true,mallShop:'サンドラッグ e-shop',url:'',mall:{p:2940,m:4},rak:{p:2780},yah:{p:2850},amz:{p:2790}},
+    {name:'（見本）おしりふき 20個',qty:1,on:true,mallShop:'サンドラッグ e-shop',url:'',mall:{p:2380,m:6},rak:{p:2200},yah:{p:2150},amz:{p:2160}},
   ];
 }
 if(!state.items.length&&!localStorage.getItem(KEY+'-seen')){seed();try{localStorage.setItem(KEY+'-seen','1')}catch(e){}}
@@ -324,10 +330,12 @@ function render(){
     n.querySelector('.srch').onclick=()=>searchItem(n,it);
     n.querySelector('.url').addEventListener('change',()=>{read(n,it);urlMsg(n,it,true);calc()});
     urlMsg(n,it,false);
+    n.querySelector('.paste').addEventListener('input',e=>{const v=e.target.value;if(v.length>30)applyPaste(n,it,v)});
     if(it._c)drawCands(n,it);
     SITES.forEach(k=>{const el=n.querySelector(`.site[data-s="${k}"]`);el.querySelector('.p').value=it[k]?.p??'';if(k==='mall')el.querySelector('.m').value=it.mall?.m??''});
     n.querySelector('.del').onclick=()=>{if(confirm('この商品を削除しますか？')){state.items.splice(i,1);save();render()}};
     n.addEventListener('input',e=>{if(e.target.classList.contains('qty')){const q=+e.target.value||1;['rak','yah'].forEach(k=>{const u=it[k]?.src?.unit;if(u){it[k].p=u*q;n.querySelector(`.site[data-s="${k}"] .p`).value=it[k].p}})}
+      if(e.target.classList.contains('paste'))return;
       if(e.target.classList.contains('p')){const k=e.target.closest('.site').dataset.s;if(it[k]){it[k].src=null;it[k].bonus=0}}read(n,it);calc()});
     n.addEventListener('change',()=>{read(n,it);calc()});
     n.dataset.i=i;box.appendChild(n);
@@ -338,6 +346,7 @@ function read(n,it){
   it.name=n.querySelector('.name').value;it.qty=+n.querySelector('.qty').value||1;it.on=n.querySelector('.chk').checked;it.url=n.querySelector('.url').value.trim();it.jan=n.querySelector('.jan').value.trim();
   SITES.forEach(k=>{const el=n.querySelector(`.site[data-s="${k}"]`);const p=el.querySelector('.p').value;it[k]=it[k]||{};it[k].p=p===''?'':+p;if(k==='mall'){const m=el.querySelector('.m').value;it.mall.m=m===''?'':+m}});
 }
+function cleanName(t){return String(t||'').replace(/【[^】]*】|\[[^\]]*\]|＼[^／]*／|★[^★]*★|\([^)]*送料[^)]*\)/g,' ').replace(/送料無料|あす楽|ポイント\d+倍/g,' ').replace(/\s+/g,' ').trim().slice(0,40)}
 function janOk(c){c=String(c||'');if(!/^(\d{8}|\d{13})$/.test(c))return false;const d=c.split('').map(Number),ck=d.pop();let sum=0;d.reverse().forEach((v,i)=>sum+=v*(i%2===0?3:1));return (10-sum%10)%10===ck}
 function parseMallUrl(u){
   if(!u)return null;
@@ -356,6 +365,34 @@ function urlMsg(n,it,fromInput){
   if(fromInput&&!it.jan){it.jan=r.jan;n.querySelector('.jan').value=r.jan}
   box.className='urlmsg msg';
   box.innerHTML=`JAN ${r.jan} を読み取りました${r.set?`。URL末尾に「×${r.set}」あり（${r.set}個セットの可能性。数量はご自身で確認してください）`:''}`;
+}
+function parseMallText(t){
+  const L=String(t||'').split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const isPrice=x=>/^[\d,]+\s*円\s*[（(]\s*税込\s*[)）]$/.test(x);
+  const i=L.findIndex(isPrice);
+  if(i<1)return{err:'商品名と価格が見つかりませんでした。商品ページ全体をコピーしたか確認してください'};
+  const price=+L[i].replace(/[^\d]/g,'');const name=L[i-1];
+  let shop=(L.find(x=>/JAL ?Mall店$/.test(x))||'').replace(/\s*JAL ?Mall店$/,'').trim();if(!shop&&i>=2)shop=L[i-2];
+  let mile=0,times=0;for(let k=i+1;k<Math.min(i+6,L.length);k++){const m=L[k].match(/積算\s*([\d,]+)\s*マイル\s*[（(]\s*(\d+)\s*倍/);if(m){mile=+m[1].replace(/,/g,'');times=+m[2];break}}
+  const all=L.join(' ');
+  const th=(all.match(/([\d,]+)\s*円\s*[（(]?税込[)）]?\s*以上\s*送料無料/)||[])[1];
+  const fee=(all.match(/送料\s*(?:全国)?\s*一律\s*([\d,]+)\s*円/)||all.match(/全国送料一律\s*([\d,]+)\s*円/)||[])[1];
+  const set=(name.match(/(\d+)\s*個セット/)||[])[1];
+  return{price,name,shop,mile,times,set:set?+set:0,ship:(th||fee)?{th:th?+th.replace(/,/g,''):0,fee:fee?+fee.replace(/,/g,''):0}:null};
+}
+function applyPaste(n,it,t){
+  const r=parseMallText(t);const box=n.querySelector('.urlmsg');
+  if(r.err){box.className='urlmsg msg err';box.textContent=r.err;return}
+  it.name=r.name;n.querySelector('.name').value=r.name;
+  if(r.set){it.qty=r.set;n.querySelector('.qty').value=r.set}
+  it.mall=it.mall||{};it.mall.p=r.price;n.querySelector('.site[data-s="mall"] .p').value=r.price;
+  if(r.times>1){it.mall.m=r.times;n.querySelector('.site[data-s="mall"] .m').value=r.times}
+  it.mallShop=r.shop;
+  if(r.shop&&r.ship){state.mallRules=state.mallRules||{};state.mallRules[r.shop]=r.ship}
+  box.className='urlmsg msg';
+  box.innerHTML=`JAL Mallから読み込みました：<b>${esc(r.name)}</b>（${esc(r.shop)}）${fmt(r.price)}円${r.mile?`・ページ表示 ${r.mile}マイル（${r.times}倍）`:''}${r.set?`<br>「${r.set}個セット」なので数量を${r.set}にしました（楽天の候補は1個の価格×${r.set}で計算）`:''}${r.ship?`<br>送料：${r.ship.th?`${fmt(r.ship.th)}円以上で無料・`:''}${r.ship.fee?`それ未満は${fmt(r.ship.fee)}円`:''}（このショップの商品に自動で適用）`:''}${r.times<=1?'<br>倍率はページで1倍表示のため、上の「JAL Mall 全体の倍率」で計算します。感謝DAYのショップ倍率があれば入力してください':''}`;
+  n.querySelector('.pastebox').open=false;n.querySelector('.paste').value='';
+  calc();
 }
 function links(n,it){
   const q=encodeURIComponent((it.name||'').replace(/（見本）/,''));
@@ -377,7 +414,7 @@ function calc(){
   const groups={};
   let tPay=0,tEff=0,tMile=0,tLsp=0,tMar=0,mallOnly={pay:0,eff:0,ok:true,any:false},countOn=0;
   const Z=()=>({pay:0,eff:0,mile:0,base:0,card:0,bonus:0,mar:0,shop:0});
-  const A=Z(),B=Z();let noMall=0;
+  const A=Z(),B=Z();let noMall=0;const gA={};
   const addTo=(o,r)=>{o.pay+=r.price;o.eff+=r.eff;o.mile+=r.mile;o.base+=r.baseMile;o.card+=r.cardMile;o.bonus+=r.bonusMile;o.mar+=r.marPt;o.shop+=r.shopPt};
   document.querySelectorAll('.item').forEach(n=>{
     const it=state.items[+n.dataset.i];links(n,it);
@@ -398,23 +435,29 @@ function calc(){
     if(it.pick){const el=n.querySelector(`.site[data-s="${it.pick}"]`);if(el._r){use={k:it.pick,r:el._r,el};el.classList.add('chosen')}}
     if(it.on!==false&&use){const best=use;
       countOn++;
-      {const shop=best.k==='mall'?'JAL Mall':best.k==='amz'?'Amazon':(it[best.k]?.src?.shop||'（ショップ未選択）');const gk=best.k+'|'+shop;(groups[gk]=groups[gk]||{k:best.k,shop,items:[]}).items.push({name:(it.name||'').replace(/（見本）/,''),qty:it.qty||1,price:best.r.price,url:best.k==='mall'?it.url:''})}
+      {const shop=best.k==='mall'?(it.mallShop||'JAL Mall（ショップ未設定）'):best.k==='amz'?'Amazon':(it[best.k]?.src?.shop||'（ショップ未選択）');const gk=best.k+'|'+shop;(groups[gk]=groups[gk]||{k:best.k,shop,items:[]}).items.push({name:(it.name||'').replace(/（見本）/,''),qty:it.qty||1,price:best.r.price,url:best.k==='mall'?it.url:'',shipWarn:!!(it[best.k]?.src?.note)})}
       const a=agg[best.k];a.n++;a.pay+=best.r.price;a.mile+=best.r.mile;a.lsp+=best.r.lsp;a.mar+=best.r.marPt;a.shop+=best.r.shopPt;a.base+=best.r.baseMile;a.bonus+=best.r.bonusMile;a.card+=best.r.cardMile;
       tPay+=best.r.price;tEff+=best.r.eff;tMile+=best.r.mile;tLsp+=best.r.lsp;tMar+=best.r.marPt;
       const mr=n.querySelector('.site[data-s="mall"]')._r;
       if(mr){mallOnly.pay+=mr.price;mallOnly.eff+=mr.eff;mallOnly.any=true}else mallOnly.ok=false;
       addTo(B,best.r);if(mr)addTo(A,mr);else{addTo(A,best.r);noMall++}
+      {const ak=mr?'mall|'+(it.mallShop||'JAL Mall（ショップ未設定）'):(best.k+'|'+(best.k==='amz'?'Amazon':best.k==='mall'?(it.mallShop||'JAL Mall（ショップ未設定）'):(it[best.k]?.src?.shop||'（ショップ未選択）')));gA[ak]=(gA[ak]||0)+(mr?mr.price:best.r.price)}
     }
   });
   const T=k=>SITES.reduce((x,s)=>x+agg[s][k],0);
   const tb=T('base'),tbo=T('bonus'),tc=T('card');
+  let shipB=0,shipA=0;
+  Object.entries(groups).forEach(([key,g])=>{g.sum=g.items.reduce((a,b)=>a+b.price,0);g.ship=shipFor(key,g.sum);shipB+=g.ship.v});
+  Object.entries(gA).forEach(([key,sum])=>{shipA+=shipFor(key,sum).v});
+  A.pay+=shipA;B.pay+=shipB;A.eff+=shipA;B.eff+=shipB;tPay+=shipB;tEff+=shipB;
   if(!countOn){$('#cmp').innerHTML='<p class="msg">価格を入れると、ここに比較が出ます</p>';$('#breakdown').innerHTML=''}
   else{
     const row=(lab,a,b,f,better,cls='')=>{const d=b-a;const c=d===0?'':((better==='low'?d<0:d>0)?'up':'dn');return `<tr class="${cls}"><td>${lab}</td><td class="num">${f(a)}</td><td class="num">${f(b)}</td><td class="num d ${c}">${d>0?'+':''}${f(d)}</td></tr>`};
     const F=x=>fmt(x),L=x=>x.toFixed(2);
     const cardUnit=s.cardSet==='jal'?'マイル':'';
     $('#cmp').innerHTML=`<table class="cmp"><thead><tr><th></th><th>全部JAL Mall</th><th>自分の選択</th><th>差</th></tr></thead><tbody>
-      ${row('支払額（円）',A.pay,B.pay,F,'low')}
+      ${row('支払額（円・送料込み）',A.pay,B.pay,F,'low')}
+      ${row('うち送料',shipA,shipB,F,'low','sub')}
       ${row('マイル合計',A.mile,B.mile,F,'high')}
       ${row('LSP（確定分）',A.base/100,B.base/100,L,'high')}
       ${row('LSP（カード分・参考）',A.card/400,B.card/400,L,'high','sub')}
@@ -445,6 +488,11 @@ function calc(){
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state,(k,v)=>k==='_c'?undefined:v))}catch(e){}}
 const PARK={rak:'https://partner.jal.co.jp/shop/?tp=15268',yah:'https://partner.jal.co.jp/shop/?tp=15264'};
 let doneShops={};
+function shipFor(key,sum){
+  const [k,shop]=key.split('|');state.ship=state.ship||{};
+  if(k==='mall'){const r=(state.mallRules||{})[shop];if(r&&(r.th||r.fee)){const free=r.th&&sum>=r.th;return{v:free?0:(r.fee||0),auto:true,rule:r,left:r.th&&!free?r.th-sum:0}}}
+  const m=state.ship[key];return{v:+(m||0),auto:false,unset:m===undefined||m===''}
+}
 function drawShops(groups){
   const order={mall:0,rak:1,yah:2,amz:3};
   const g=Object.entries(groups).sort((a,b)=>order[a[1].k]-order[b[1].k]);
@@ -453,8 +501,11 @@ function drawShops(groups){
   $('#shopList').innerHTML=g.map(([key,x])=>{n++;const sum=x.items.reduce((a,b)=>a+b.price,0);
     const btn=x.k==='mall'?`<a class="btn small park" href="https://ec.jal.co.jp/shop/default.aspx" target="_blank" rel="noopener">JAL Mallを開く</a>`:x.k==='amz'?`<a class="btn small" href="https://www.amazon.co.jp/" target="_blank" rel="noopener">Amazonを開く</a>`:`<a class="btn small park" href="${PARK[x.k]}" target="_blank" rel="noopener">① パーク経由で開く</a>`;
     const step=x.k==='mall'?'ログインしてから購入（商品URLを登録していれば下のリンクから）':x.k==='amz'?'パーク対象外として計算しています':`①を押す → パークで「ショップへ」→ ${x.k==='rak'?'楽天':'Yahoo!'}の<b>閲覧履歴</b>から「<b>${esc(x.shop)}</b>」の下の商品を開く → カートへ → 購入`;
-    return `<div class="shop${doneShops[key]?' done':''}"><h3><span>${n}. ${x.k==='rak'?'楽天：':x.k==='yah'?'Yahoo!：':''}${esc(x.shop)}</span><span class="num">${fmt(sum)}円</span></h3><p class="step">${step}</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${btn}<button class="btn small" data-done="${esc(key)}">${doneShops[key]?'買った ✓':'この店は買った'}</button></div>${x.items.map(i=>`<div class="li"><span>${esc(i.name)} ×${i.qty}（${fmt(i.price)}円）</span>${i.url?`<a class="btn small" href="${esc(i.url)}" target="_blank" rel="noopener">商品</a>`:''}<button class="btn small" data-copy="${esc(i.name)}">名前をコピー</button></div>`).join('')}</div>`}).join('');
+    const sh=x.ship||shipFor(key,sum);const needShip=x.items.some(i=>i.shipWarn);
+    const shipHtml=sh.auto?`<p class="step">送料：<b>${sh.v?fmt(sh.v)+'円':'無料'}</b>（${sh.rule.th?`${fmt(sh.rule.th)}円以上で無料`:''}${sh.left?`・あと<b>${fmt(sh.left)}円</b>で無料`:''}）</p>`:`<p class="step">送料 <input class="num" data-ship="${esc(key)}" type="number" min="0" value="${state.ship&&state.ship[key]!==undefined?state.ship[key]:''}" placeholder="0" style="width:90px;padding:4px 6px;font-size:13px;${needShip&&sh.unset?'border-color:var(--crane)':''}"> 円${needShip&&sh.unset?' <span style="color:var(--crane)">送料別の商品あり。送料を入れてください</span>':x.k==='mall'?'（ショップのページを貼り付けると自動で入ります）':''}</p>`;
+    return `<div class="shop${doneShops[key]?' done':''}"><h3><span>${n}. ${x.k==='rak'?'楽天：':x.k==='yah'?'Yahoo!：':x.k==='mall'?'JAL Mall：':''}${esc(x.shop)}</span><span class="num">${fmt(sum+sh.v)}円</span></h3>${shipHtml}<p class="step">${step}</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${btn}<button class="btn small" data-done="${esc(key)}">${doneShops[key]?'買った ✓':'この店は買った'}</button></div>${x.items.map(i=>`<div class="li"><span>${esc(i.name)} ×${i.qty}（${fmt(i.price)}円）</span>${i.url?`<a class="btn small" href="${esc(i.url)}" target="_blank" rel="noopener">商品</a>`:''}<button class="btn small" data-copy="${esc(i.name)}">名前をコピー</button></div>`).join('')}</div>`}).join('');
   $('#shopList').querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='コピーしました'}catch(e){prompt('コピーしてください',b.dataset.copy)}});
+  $('#shopList').querySelectorAll('[data-ship]').forEach(el=>el.addEventListener('change',()=>{state.ship=state.ship||{};state.ship[el.dataset.ship]=el.value===''?'':+el.value;calc()}));
   $('#shopList').querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{const k=b.dataset.done;doneShops[k]=!doneShops[k];calc()});
 }
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -502,7 +553,7 @@ function yahSearch(q,jan){
 }
 async function searchItem(n,it){
   read(n,it);
-  const q=(it.name||'').replace(/（見本）/,'').trim();
+  const q=(it.name||'').replace(/（見本）/,'').replace(/[\[［【(（][^\]］】)）]*[\]］】)）]/g,' ').replace(/\s+/g,' ').trim();
   if(!q&&!it.jan){alert('商品名かJANコードを入れてください');return}
   const jan=janOk(it.jan)?it.jan:'';
   if(it.jan&&!jan){n.querySelector('.urlmsg').className='urlmsg msg err';n.querySelector('.urlmsg').textContent=`JANコード「${it.jan}」は正しくないようです（桁数か最後の数字が合いません）。商品名で検索します`}
@@ -511,9 +562,11 @@ async function searchItem(n,it){
     window.open(`https://search.rakuten.co.jp/search/mall/${encodeURIComponent(jan||q)}/`,'_blank','noopener');
     it._c={rak:{err:'APIキー未設定のため、楽天の検索結果を別タブで開きました。価格を見て「楽天」の欄に入力してください（キーを入れると、ここに候補が並びます）'}};drawCands(n,it);return}
   it._c={rak:{loading:true}};drawCands(n,it);
-  const tries=[];if(jan)tries.push(['JANコード',jan]);if(q){tries.push(['商品名',q]);const sh=q.split(/[\s　]+/).filter(Boolean);if(sh.length>2)tries.push(['短くした商品名',sh.slice(0,2).join(' ')])}
+  const tries=[];if(!q&&!jan)return;if(jan)tries.push(['JANコード',jan]);if(q){tries.push(['商品名',q]);const sh=q.split(/[\s　]+/).filter(Boolean);if(sh.length>2)tries.push(['短くした商品名',sh.slice(0,2).join(' ')])}
   try{
-    for(const [lab,kw] of tries){const r=await rakSearch(kw,'');if(r.length){r.sort((a,b)=>a.price-b.price);it._c.rak={list:r.slice(0,6),via:`${lab}「${kw}」で検索`};break}}
+    for(const [lab,kw] of tries){const r=await rakSearch(kw,'');if(r.length){r.sort((a,b)=>a.price-b.price);it._c.rak={list:r.slice(0,6),via:`${lab}「${kw}」で検索`};
+      if(!q){const nm=cleanName(r[0].name);it.name=nm;n.querySelector('.name').value=nm;it._c.rak.via+=`（商品名を「${nm}」にしました。違えば直してください）`}
+      break}}
     if(!it._c.rak.list)it._c.rak={list:[],via:tries.map(t=>t[1]).join('／')};
   }catch(e){it._c.rak={err:e.message}}
   drawCands(n,it);
