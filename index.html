@@ -100,6 +100,9 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 .cmp tr.eff td{font-size:14px;font-weight:900;border-top:2px solid var(--ink)}
 .cmp tr.grp td{font-size:10px;color:var(--mute);font-weight:700;background:var(--paper);padding:5px 4px}
 .cmp tr.sub td{font-size:10px;color:var(--mute)}
+.cmp tr.lsp td{border-top:3px solid var(--ink)!important;font-weight:900;font-size:14px;background:var(--paper);padding-top:9px}
+.cmp tr.mtot td{font-weight:900;font-size:13px}
+.cmp .why{display:block;font-size:9px;color:var(--mute);font-weight:400}
 .verdict{margin-top:8px;padding:10px;border-radius:10px;background:var(--sky-soft);font-size:12px;line-height:1.7}
 .keyok{font-size:11px;color:var(--ok);font-weight:700}
 .credit{text-align:center;font-size:10px;color:var(--mute);margin:6px 0 0}
@@ -477,21 +480,23 @@ function calc(){
       <tr class="grp"><td colspan="4">お金（楽天などのポイントは現金と同じに数えます）</td></tr>
       ${row('支払額（送料込み）',A.pay,B.pay,F,'low')}
       ${row('うち送料',shipA,shipB,F,'low','sub')}
-      ${row('楽天などのポイント（ほぼ現金）',A.shop,B.shop,F,'high')}
+      ${row(`楽天などのポイント<span class="why">楽天 ${s.rakRate}倍${s.rakRate==5?'（会員1＋楽天モバイル4）':''}／Yahoo! ${s.yahRate}倍／Amazon ${s.amzRate}倍。商品ごとの上乗せは各商品の欄</span>`,A.shop,B.shop,F,'high')}
       ${row('実質の支払い（支払額−ポイント）',A.pay-A.shop,B.pay-B.shop,F,'low','eff')}
       <tr class="grp"><td colspan="4">もらえるポイント（価値は使い方しだいなので、数だけ）</td></tr>
-      ${row('マイル合計',A.mile,B.mile,F,'high')}
-      ${row('うちパーク分（楽天・Yahoo!）',A.park,B.park,F,'high','sub')}
-      ${row('うちJALカード分',A.card,B.card,F,'high','sub')}
-      ${row('LSP（確定分）',A.base/100,B.base/100,L,'high')}
-      ${row('LSP（カード分・参考）',A.card/400,B.card/400,L,'high','sub')}
+      ${row('マイル合計',A.mile,B.mile,F,'high','mtot')}
+      ${row('うちJAL Mall 通常分<span class="why">税抜100円＝1マイル</span>',A.base-A.park,B.base-B.park,F,'high','sub')}
+      ${row('うちショップ倍率・感謝DAYの上乗せ<span class="why">LSPの対象外</span>',A.bonus,B.bonus,F,'high','sub')}
+      ${row('うちパーク分（楽天・Yahoo!）<span class="why">300円＝1マイル</span>',A.park,B.park,F,'high','sub')}
+      ${row(`うちJALカード分<span class="why">${s.premium==='1'?'プレミアム加入：JAL Mall 100円＝2／ほか100円＝1':'プレミアムなし：JAL Mall 100円＝1／ほか200円＝1'}</span>`,A.card,B.card,F,'high','sub')}
+      ${row('LSP（確定分）<span class="why">通常分＋パーク分 100マイル＝1。マイル合計とは別</span>',A.base/100,B.base/100,L,'high','lsp')}
+      ${row('LSP（カード分・参考）<span class="why">カード全体で2,000マイルごとに5</span>',A.card/400,B.card/400,L,'high','sub')}
       ${row('ボンヴォイポイント',A.mar,B.mar,F,'high')}
     </tbody></table>
     <div class="verdict">${(()=>{const dp=B.pay-A.pay,parts=[];const sg=(v,u,f=F)=>`${u} ${v>0?'+':''}${f(v)}`;
       if(B.mile-A.mile)parts.push(sg(B.mile-A.mile,'マイル'));if(B.base-A.base)parts.push(sg((B.base-A.base)/100,'LSP',L));if(B.mar-A.mar)parts.push(sg(B.mar-A.mar,'ボンヴォイ'));
       const nA=A.pay-A.shop,nB=B.pay-B.shop,dn=nB-nA;const head0=dn<0?`自分の選択は、全部JAL Mallより<b>実質${fmt(-dn)}円安い</b>（支払額${dp<=0?fmt(-dp)+'円少ない':fmt(dp)+'円多い'}＋ポイント${fmt(B.shop-A.shop)}）`:dn>0?`自分の選択は、全部JAL Mallより<b>実質${fmt(dn)}円高い</b>`:'実質の支払いは同じ';const head=0?`自分の選択は、全部JAL Mallより<b>支払いが${fmt(-dp)}円少ない</b>`:dp>0?`自分の選択は、全部JAL Mallより<b>支払いが${fmt(dp)}円多い</b>`:'支払額は同じ';
       return `${head0}。その代わり：<b>${parts.join('／')||'差なし'}</b>`})()}
-      ${unsetB&&(B.pay-B.shop)<(A.pay-A.shop)?`<br><b style="color:var(--crane)">⚠ 送料未確認のお店が${unsetB}店あります（0円で計算）。1店あたり平均<u>${fmt(((A.pay-A.shop)-(B.pay-B.shop))/unsetB)}円</u>以上の送料がかかるなら、全部JAL Mallのほうが安くなります</b>`:''}${shipAD.length?`<br><span style="color:var(--mute)">全部JAL Mallの送料：${shipAD.map(x=>`${esc(x.shop)} ${fmt(x.sum)}円→${x.f.v?`<b>${fmt(x.f.v)}円</b>${x.f.left?`（あと${fmt(x.f.left)}円で無料）`:''}`:'無料'}${x.f.v?`［${x.names.map(esc).join('、')}］`:''}`).join('／')}</span>`:''}<br><span style="color:var(--mute)">どちらが得かは、今どのポイントが必要かで変わります（マリオットの年500万円を目指す／JALのLSPに集中する など）。数字を見て選んでください</span>${noMall?`<br>※JAL Mallに価格がない${noMall}品は、両方とも「自分の選択」のお店で計算しています`:''}${s.vUse?`<br><span style="color:var(--mute)">実質価格＝支払額−（マイル×${s.vMile}円＋ボンヴォイ×${s.vMar}円＋ポイント×${s.vShop}円${s.vLsp?`＋LSP×${s.vLsp}円`:''}）</span>`:''}</div>`;
+      ${unsetB&&(B.pay-B.shop)<(A.pay-A.shop)?`<br><b style="color:var(--crane)">⚠ 送料未確認${unsetB}店（0円で計算）。1店<u>${fmt(((A.pay-A.shop)-(B.pay-B.shop))/unsetB)}円</u>超なら全部JAL Mallが安い</b>`:''}${shipAD.length?`${shipAD.some(x=>x.f.v)?`<br><span style="color:var(--mute)">Mallの送料：${shipAD.filter(x=>x.f.v).map(x=>`${esc(x.shop)} <b>${fmt(x.f.v)}円</b>${x.f.left?`（あと${fmt(x.f.left)}円で無料）`:''}`).join('／')}</span>`:''}`:''}<br><span style="color:var(--mute)">どちらが得かは、今ほしいポイントしだい</span>${noMall?`<br><span style="color:var(--mute)">※Mallにない${noMall}品は両方とも同じ店で計算</span>`:''}${s.vUse?`<br><span style="color:var(--mute)">実質価格＝支払額−（マイル×${s.vMile}円＋ボンヴォイ×${s.vMar}円＋ポイント×${s.vShop}円${s.vLsp?`＋LSP×${s.vLsp}円`:''}）</span>`:''}</div>`;
     $('#breakdown').innerHTML=`<table><thead><tr><th>自分の選択のマイル内訳</th><th>マイル</th><th>LSPの計算</th><th>LSP</th></tr></thead><tbody>
     <tr><td>通常分（JAL Mall 100円=1マイル・パーク）</td><td class="num">${fmt(tb)}</td><td>100マイル=1</td><td class="num">${(tb/100).toFixed(2)}</td></tr>
     <tr><td>JALカード分</td><td class="num">${fmt(tc)}</td><td>2,000マイルごとに5</td><td class="num">参考 ${(tc/400).toFixed(2)}</td></tr>
