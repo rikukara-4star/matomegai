@@ -98,6 +98,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 .cmp td.d{font-weight:700}
 .cmp td.up{color:var(--ok)}.cmp td.dn{color:var(--crane)}
 .cmp tr.eff td{font-size:14px;font-weight:900;border-top:2px solid var(--ink)}
+.cmp tr.grp td{font-size:10px;color:var(--mute);font-weight:700;background:var(--paper);padding:5px 4px}
 .cmp tr.sub td{font-size:10px;color:var(--mute)}
 .verdict{margin-top:8px;padding:10px;border-radius:10px;background:var(--sky-soft);font-size:12px;line-height:1.7}
 .keyok{font-size:11px;color:var(--ok);font-weight:700}
@@ -130,7 +131,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
       <div><label class="f">Amazonの還元（%）</label><input type="number" id="amzRate" min="0" step="0.5" value="1" class="num"></div>
       <div><label class="f">ショッピングマイル・プレミアム</label><select id="premium"><option value="1">加入している</option><option value="0">加入していない</option></select></div>
     </div>
-    <details id="detailBox"><summary>（任意）マイル・ポイントを円に直して比べたい人</summary>
+    <details id="detailBox" style="display:none"><summary>（任意）マイル・ポイントを円に直して比べたい人</summary>
       <div class="g4" style="margin-top:8px;display:none">
         <div><label class="f">JAL Mallのカード</label><select id="cMall"><option value="jal">JALカード</option><option value="mar">マリオット</option></select></div>
         <div><label class="f">楽天のカード</label><select id="cRak"><option value="mar">マリオット</option><option value="jal">JALカード</option></select></div>
@@ -157,7 +158,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
       <li>JAL Mallはショップごとに倍率が違うので、各商品の「倍率」に<b>100円で何マイルか</b>を入れます</li>
       <li>チェックを外した商品は合計に入りません（今回は買わない物）</li>
       <li>「楽天で検索」で楽天の候補が出ます（APIキーを入れた人のみ。Yahoo!・Amazonは「探す」から開いて手入力）。<b>「これにする」を押すと、数量分の価格が入ります</b>（JANコードを入れると同じ商品を探しやすくなります）</li>
-      <li>最安には自動で印がつきます。別のショップで買いたい時は、そのショップの<b>「ここで買う」</b>を押してください</li>
+      <li>最安の印は「支払額−楽天などのポイント」で判定します（楽天ポイントは現金と同じに数える）。マイル・ボンヴォイ・LSPは価値が使い方で変わるので、円には直さず数だけ出します。別のショップで買いたい時は、そのショップの<b>「ここで買う」</b>を押してください</li>
     </ul>
     <div id="items"></div>
     <button class="add" id="add">＋ 商品を追加</button>
@@ -281,7 +282,7 @@ details summary{cursor:pointer;font-size:12px;color:var(--sky);font-weight:700}
 </template>
 
 <script>
-const KEY='matomegai-v1';/* v3.5: パーク分の表示・送料の内訳 / v3.4: 手入力に集約・ショップ選択・検索ワード・送料確認→比較・商品ごとの倍率 */
+const KEY='matomegai-v1';/* v3.6: 楽天ptは現金側・マイル等は数だけ / v3.5.1: ショップ選択を優先・送料の原因の商品名 / v3.5: パーク分の表示・送料の内訳 / v3.4: 手入力に集約・ショップ選択・検索ワード・送料確認→比較・商品ごとの倍率 */
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
 const SITES=['mall','rak','yah','amz'];
@@ -419,16 +420,16 @@ function applyCardSet(){
 }
 function calc(){
   applyCardSet();
-  const s=S();state.settings=s;
+  const s=S();s.vUse=false;state.settings=s;
   $('#setSum').innerHTML=`${s.cardSet==='jal'?'JALカードだけ':'JALカード＋マリオット'}／Mall ${s.mallBase}倍／楽天 ${s.rakRate}%／Yahoo! ${s.yahRate}%／Amazon ${s.amzRate}%／プレミアム${s.premium==='1'?'あり':'なし'}　<u>変える</u>`;
   const agg={};SITES.forEach(k=>agg[k]={n:0,pay:0,mile:0,lsp:0,mar:0,shop:0,base:0,bonus:0,card:0});
   const groups={};
   let tPay=0,tEff=0,tMile=0,tLsp=0,tMar=0,mallOnly={pay:0,eff:0,ok:true,any:false},countOn=0;
   const Z=()=>({pay:0,eff:0,mile:0,base:0,card:0,bonus:0,mar:0,shop:0,park:0});
-  const A=Z(),B=Z();let noMall=0;const gA={},gAp={};
+  const A=Z(),B=Z();let noMall=0;const gA={},gAp={},gAn={};
   const addTo=(o,r)=>{o.pay+=r.price;o.eff+=r.eff;o.mile+=r.mile;o.base+=r.baseMile;o.card+=r.cardMile;o.bonus+=r.bonusMile;o.mar+=r.marPt;o.shop+=r.shopPt;o.park+=r.park};
   document.querySelectorAll('.item').forEach(n=>{
-    const it=state.items[+n.dataset.i];syncShop(it);links(n,it);
+    const it=state.items[+n.dataset.i];if(!it.mallShop)syncShop(it);links(n,it);
     n.classList.toggle('off',it.on===false);
     let best=null;
     SITES.forEach(k=>{
@@ -439,7 +440,7 @@ function calc(){
       const src=el.querySelector('.src');if(src){const o=it[k]?.src;src.innerHTML=o?`${esc(o.shop)} <a href="${esc(o.url)}" target="_blank" rel="noopener">見る</a>${o.note?' · '+esc(o.note):''}`:''}
       el.querySelector('.eff').innerHTML=r?`${s.vUse?`実質<b class="num">${fmt(r.eff)}円</b>`:''}${fmt(r.mile)}マイル${r.park?`（うちパーク${fmt(r.park)}）`:''}・LSP ${(r.baseMile/100).toFixed(2)}${r.cardMile?`<br>＋カード分 ${(r.cardMile/400).toFixed(2)}（参考）`:''}${r.bonusMile?`<br>（うちボーナス${fmt(r.bonusMile)}はLSP対象外）`:''}${r.marPt?`<br>ボンヴォイ ${fmt(r.marPt)}pt`:''}${r.shopPt?`<br>ポイント ${fmt(r.shopPt)}`:''}`:'<span style="opacity:.6">未入力</span>';
       const pb=el.querySelector('.pick');pb.disabled=!r;pb.textContent=!r?'価格を入れると選べます':(it.pick===k?'ここで買う ✓':'ここで買う');
-      const key=x=>s.vUse?x.eff:x.price;
+      const key=x=>x.price-x.shopPt;
       if(r&&(!best||key(r)<key(best.r)))best={k,r,el};
     });
     if(best)best.el.classList.add('best');
@@ -453,14 +454,14 @@ function calc(){
       const mr=n.querySelector('.site[data-s="mall"]')._r;
       if(mr){mallOnly.pay+=mr.price;mallOnly.eff+=mr.eff;mallOnly.any=true}else mallOnly.ok=false;
       addTo(B,best.r);if(mr)addTo(A,mr);else{addTo(A,best.r);noMall++}
-      {const ak=mr?'mall|'+(it.mallShop||'JAL Mall（ショップ未設定）'):(best.k+'|'+(best.k==='amz'?'Amazon':best.k==='mall'?(it.mallShop||'JAL Mall（ショップ未設定）'):(it[best.k]?.src?.shop||'（ショップ未選択）')));gA[ak]=(gA[ak]||0)+(mr?mr.price:best.r.price);if(!mr)gAp[ak]=(gAp[ak]||0)+Math.floor(best.r.price/300)}
+      {const ak=mr?'mall|'+(it.mallShop||'JAL Mall（ショップ未設定）'):(best.k+'|'+(best.k==='amz'?'Amazon':best.k==='mall'?(it.mallShop||'JAL Mall（ショップ未設定）'):(it[best.k]?.src?.shop||'（ショップ未選択）')));gA[ak]=(gA[ak]||0)+(mr?mr.price:best.r.price);(gAn[ak]=gAn[ak]||[]).push((it.name||'').replace(/（見本）/,'').slice(0,14));if(!mr)gAp[ak]=(gAp[ak]||0)+Math.floor(best.r.price/300)}
     }
   });
   const T=k=>SITES.reduce((x,s)=>x+agg[s][k],0);
   let tb=T('base');const tbo=T('bonus'),tc=T('card');
   let shipB=0,shipA=0;
   Object.entries(groups).forEach(([key,g])=>{g.sum=g.items.reduce((a,b)=>a+b.price,0);g.ship=shipFor(key,g.sum);shipB+=g.ship.v});
-  const shipAD=[];Object.entries(gA).forEach(([key,sum])=>{const f=shipFor(key,sum);shipA+=f.v;if(key.startsWith('mall|'))shipAD.push({shop:key.split('|')[1],sum,f})});
+  const shipAD=[];Object.entries(gA).forEach(([key,sum])=>{const f=shipFor(key,sum);shipA+=f.v;if(key.startsWith('mall|'))shipAD.push({shop:key.split('|')[1],sum,f,names:gAn[key]||[]})});
   const parkFix=(o,entries)=>{let per=0,grp=0;entries.forEach(([k,sum,itemsPark])=>{if(/^(rak|yah)\|/.test(k)){grp+=Math.floor(sum/300);per+=itemsPark}});const d=grp-per;o.park+=d;o.mile+=d;o.base+=d;return d};
   const dB=parkFix(B,Object.entries(groups).map(([k,g])=>[k,g.sum,g.items.reduce((a,b)=>a+Math.floor(b.price/300),0)]));
   parkFix(A,Object.entries(gA).filter(([k])=>!k.startsWith('mall|')).map(([k,sum])=>[k,sum,gAp[k]||0]));
@@ -473,22 +474,24 @@ function calc(){
     const F=x=>fmt(x),L=x=>x.toFixed(2);
     const cardUnit=s.cardSet==='jal'?'マイル':'';
     $('#cmp').innerHTML=`<table class="cmp"><thead><tr><th></th><th>全部JAL Mall</th><th>自分の選択</th><th>差</th></tr></thead><tbody>
-      ${row('支払額（円・送料込み）',A.pay,B.pay,F,'low')}
+      <tr class="grp"><td colspan="4">お金（楽天などのポイントは現金と同じに数えます）</td></tr>
+      ${row('支払額（送料込み）',A.pay,B.pay,F,'low')}
       ${row('うち送料',shipA,shipB,F,'low','sub')}
+      ${row('楽天などのポイント（ほぼ現金）',A.shop,B.shop,F,'high')}
+      ${row('実質の支払い（支払額−ポイント）',A.pay-A.shop,B.pay-B.shop,F,'low','eff')}
+      <tr class="grp"><td colspan="4">もらえるポイント（価値は使い方しだいなので、数だけ）</td></tr>
       ${row('マイル合計',A.mile,B.mile,F,'high')}
       ${row('うちパーク分（楽天・Yahoo!）',A.park,B.park,F,'high','sub')}
       ${row('うちJALカード分',A.card,B.card,F,'high','sub')}
       ${row('LSP（確定分）',A.base/100,B.base/100,L,'high')}
       ${row('LSP（カード分・参考）',A.card/400,B.card/400,L,'high','sub')}
       ${row('ボンヴォイポイント',A.mar,B.mar,F,'high')}
-      ${row('楽天などのポイント',A.shop,B.shop,F,'high')}
-      ${s.vUse?row('実質価格（円・自分の換算）',A.eff,B.eff,F,'low','eff'):''}
     </tbody></table>
     <div class="verdict">${(()=>{const dp=B.pay-A.pay,parts=[];const sg=(v,u,f=F)=>`${u} ${v>0?'+':''}${f(v)}`;
-      if(B.mile-A.mile)parts.push(sg(B.mile-A.mile,'マイル'));if(B.base-A.base)parts.push(sg((B.base-A.base)/100,'LSP',L));if(B.mar-A.mar)parts.push(sg(B.mar-A.mar,'ボンヴォイ'));if(B.shop-A.shop)parts.push(sg(B.shop-A.shop,'楽天など'));
-      const head=dp<0?`自分の選択は、全部JAL Mallより<b>支払いが${fmt(-dp)}円少ない</b>`:dp>0?`自分の選択は、全部JAL Mallより<b>支払いが${fmt(dp)}円多い</b>`:'支払額は同じ';
-      return `${head}。その代わり：<b>${parts.join('／')||'差なし'}</b>`})()}
-      ${unsetB&&B.pay<A.pay?`<br><b style="color:var(--crane)">⚠ 送料未確認のお店が${unsetB}店あります（0円で計算）。1店あたり平均<u>${fmt((A.pay-B.pay)/unsetB)}円</u>以上の送料がかかるなら、全部JAL Mallのほうが安くなります</b>`:''}${shipAD.length?`<br><span style="color:var(--mute)">全部JAL Mallの送料：${shipAD.map(x=>`${esc(x.shop)} ${fmt(x.sum)}円→${x.f.v?`<b>${fmt(x.f.v)}円</b>${x.f.left?`（あと${fmt(x.f.left)}円で無料）`:''}`:'無料'}`).join('／')}</span>`:''}<br><span style="color:var(--mute)">どちらが得かは、今どのポイントが必要かで変わります（マリオットの年500万円を目指す／JALのLSPに集中する など）。数字を見て選んでください</span>${noMall?`<br>※JAL Mallに価格がない${noMall}品は、両方とも「自分の選択」のお店で計算しています`:''}${s.vUse?`<br><span style="color:var(--mute)">実質価格＝支払額−（マイル×${s.vMile}円＋ボンヴォイ×${s.vMar}円＋ポイント×${s.vShop}円${s.vLsp?`＋LSP×${s.vLsp}円`:''}）</span>`:''}</div>`;
+      if(B.mile-A.mile)parts.push(sg(B.mile-A.mile,'マイル'));if(B.base-A.base)parts.push(sg((B.base-A.base)/100,'LSP',L));if(B.mar-A.mar)parts.push(sg(B.mar-A.mar,'ボンヴォイ'));
+      const nA=A.pay-A.shop,nB=B.pay-B.shop,dn=nB-nA;const head0=dn<0?`自分の選択は、全部JAL Mallより<b>実質${fmt(-dn)}円安い</b>（支払額${dp<=0?fmt(-dp)+'円少ない':fmt(dp)+'円多い'}＋ポイント${fmt(B.shop-A.shop)}）`:dn>0?`自分の選択は、全部JAL Mallより<b>実質${fmt(dn)}円高い</b>`:'実質の支払いは同じ';const head=0?`自分の選択は、全部JAL Mallより<b>支払いが${fmt(-dp)}円少ない</b>`:dp>0?`自分の選択は、全部JAL Mallより<b>支払いが${fmt(dp)}円多い</b>`:'支払額は同じ';
+      return `${head0}。その代わり：<b>${parts.join('／')||'差なし'}</b>`})()}
+      ${unsetB&&(B.pay-B.shop)<(A.pay-A.shop)?`<br><b style="color:var(--crane)">⚠ 送料未確認のお店が${unsetB}店あります（0円で計算）。1店あたり平均<u>${fmt(((A.pay-A.shop)-(B.pay-B.shop))/unsetB)}円</u>以上の送料がかかるなら、全部JAL Mallのほうが安くなります</b>`:''}${shipAD.length?`<br><span style="color:var(--mute)">全部JAL Mallの送料：${shipAD.map(x=>`${esc(x.shop)} ${fmt(x.sum)}円→${x.f.v?`<b>${fmt(x.f.v)}円</b>${x.f.left?`（あと${fmt(x.f.left)}円で無料）`:''}`:'無料'}${x.f.v?`［${x.names.map(esc).join('、')}］`:''}`).join('／')}</span>`:''}<br><span style="color:var(--mute)">どちらが得かは、今どのポイントが必要かで変わります（マリオットの年500万円を目指す／JALのLSPに集中する など）。数字を見て選んでください</span>${noMall?`<br>※JAL Mallに価格がない${noMall}品は、両方とも「自分の選択」のお店で計算しています`:''}${s.vUse?`<br><span style="color:var(--mute)">実質価格＝支払額−（マイル×${s.vMile}円＋ボンヴォイ×${s.vMar}円＋ポイント×${s.vShop}円${s.vLsp?`＋LSP×${s.vLsp}円`:''}）</span>`:''}</div>`;
     $('#breakdown').innerHTML=`<table><thead><tr><th>自分の選択のマイル内訳</th><th>マイル</th><th>LSPの計算</th><th>LSP</th></tr></thead><tbody>
     <tr><td>通常分（JAL Mall 100円=1マイル・パーク）</td><td class="num">${fmt(tb)}</td><td>100マイル=1</td><td class="num">${(tb/100).toFixed(2)}</td></tr>
     <tr><td>JALカード分</td><td class="num">${fmt(tc)}</td><td>2,000マイルごとに5</td><td class="num">参考 ${(tc/400).toFixed(2)}</td></tr>
@@ -499,7 +502,7 @@ function calc(){
   drawShops(groups);drawShipChk(groups);
   $('#tPay').innerHTML=`${fmt(tPay)}<small>円</small>`;
   document.querySelector('.pass .lbl').textContent='自分の選択で買うと';
-  $('#tSub').textContent=s.vUse?`実質 ${fmt(tEff)}円（${countOn}品目）`:`${countOn}品目`;
+  $('#tSub').textContent=`ポイントを引くと実質 ${fmt(B.pay-B.shop)}円（${countOn}品目）`;
   $('#tMile').innerHTML=`${fmt(tMile)}<small>マイル</small>`;
   $('#tSub2').textContent=`LSP ${(tb/100).toFixed(2)}＋カード分${(tc/400).toFixed(2)}（参考）／ボンヴォイ ${fmt(tMar)}pt`;
   save();
